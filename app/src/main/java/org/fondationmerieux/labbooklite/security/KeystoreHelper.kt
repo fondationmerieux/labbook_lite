@@ -7,6 +7,7 @@ import android.content.Context
 import android.util.Base64
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKeys
+import androidx.core.content.edit
 
 /**
  * Helper class to securely store and retrieve the database password using Android Keystore.
@@ -36,7 +37,7 @@ object KeystoreHelper {
         if (password == null) {
             // Generate a new secure password
             password = generateSecurePassword()
-            sharedPreferences.edit().putString(KEY_PASSWORD, password).apply()
+            sharedPreferences.edit() { putString(KEY_PASSWORD, password) }
         }
 
         return password
