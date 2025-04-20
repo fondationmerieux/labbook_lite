@@ -16,7 +16,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.fondationmerieux.labbooklite.database.LabBookLiteDatabase
-import org.fondationmerieux.labbooklite.data.entity.PatientEntity
+import org.fondationmerieux.labbooklite.database.entity.PatientEntity
 
 @Composable
 fun PatientSearchScreen(
@@ -34,7 +34,7 @@ fun PatientSearchScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         Text(
             text = stringResource(R.string.rechercher_un_patient),

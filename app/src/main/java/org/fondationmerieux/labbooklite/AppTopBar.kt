@@ -49,6 +49,7 @@ fun AppTopBar(navController: NavController, showMenu: Boolean = true) {
                     contentDescription = "Logo",
                     modifier = Modifier
                         .height(32.dp)
+
                         .clickable {
                             navController.navigate("home") {
                                 popUpTo("home") { inclusive = true }
@@ -62,7 +63,11 @@ fun AppTopBar(navController: NavController, showMenu: Boolean = true) {
         actions = {
             if (showMenu) {
                 IconButton(onClick = { menuExpanded.value = true }) {
-                    Icon(Icons.Default.Menu, contentDescription = "Menu")
+                    Icon(
+                        imageVector = Icons.Default.Menu,
+                        contentDescription = "Menu",
+
+                        )
                 }
 
                 DropdownMenu(
@@ -106,6 +111,14 @@ fun AppTopBar(navController: NavController, showMenu: Boolean = true) {
                     }
 
                     // Common menu entries (shown for all roles)
+                    DropdownMenuItem(
+                        text = { Text("Général") },
+                        onClick = {
+                            menuExpanded.value = false
+                            navController.navigate("general")
+                        }
+                    )
+
                     DropdownMenuItem(
                         text = { Text("À propos") },
                         onClick = {

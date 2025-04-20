@@ -2,6 +2,7 @@ package org.fondationmerieux.labbooklite
 
 import android.content.Context
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,6 +16,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.fondationmerieux.labbooklite.database.LabBookLiteDatabase
+import org.fondationmerieux.labbooklite.database.entity.RecordEntity
+import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.*
+import org.fondationmerieux.labbooklite.security.KeystoreHelper
+
 
 @Composable
 fun HomeScreen(navController: NavController) {
@@ -22,21 +31,67 @@ fun HomeScreen(navController: NavController) {
     val prefs = context.getSharedPreferences("LabBookPrefs", Context.MODE_PRIVATE)
     val role = prefs.getString("role_type", "") ?: ""
 
+    val dbPassword = KeystoreHelper.getOrCreatePassword(context)
+    val db = LabBookLiteDatabase.getDatabase(context, dbPassword)
+
+    var lastRecord by remember { mutableStateOf<RecordEntity?>(null) }
+
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) {
+            lastRecord = db.recordDao().getLastRecord()
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterVertically),
+            .padding(horizontal = 24.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         when (role) {
             // AGT → new-record + list-record
             "AGT" -> {
+                lastRecord?.let { record ->
+                    val recordNumber = record.rec_num_lite?.takeLast(4)?.toIntOrNull() ?: record.id_data
+                    val recordDate = record.rec_date_save ?: "?"
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(text = "Dernier dossier ", style = MaterialTheme.typography.titleMedium)
+                            Box(
+                                modifier = Modifier
+                                    .background(color = Color(0xFFC7AD70), shape = MaterialTheme.shapes.small)
+                                    .padding(horizontal = 12.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "$recordNumber",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = Color.White
+                                )
+                            }
+                        }
+
+                        Text(
+                            text = "Date de création : $recordDate",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
                 HomeCard(stringResource(R.string.nouveau_dossier), R.drawable.new_record) {
                     navController.navigate("new_record")
                 }
                 HomeCard(stringResource(R.string.liste_des_dossiers), R.drawable.list_record) {
-                    // TODO: navigate to list record
+                    navController.navigate("record_list")
                 }
             }
 

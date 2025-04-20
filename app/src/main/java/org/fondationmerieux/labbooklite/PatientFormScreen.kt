@@ -1,5 +1,6 @@
 package org.fondationmerieux.labbooklite
 
+import android.content.Context
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
@@ -20,9 +21,9 @@ import androidx.navigation.NavController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.fondationmerieux.labbooklite.data.entity.DictionaryEntity
-import org.fondationmerieux.labbooklite.data.entity.NationalityEntity
-import org.fondationmerieux.labbooklite.data.entity.PatientEntity
+import org.fondationmerieux.labbooklite.database.entity.DictionaryEntity
+import org.fondationmerieux.labbooklite.database.entity.NationalityEntity
+import org.fondationmerieux.labbooklite.database.entity.PatientEntity
 import org.fondationmerieux.labbooklite.database.LabBookLiteDatabase
 import java.time.LocalDate
 import java.time.Period
@@ -190,6 +191,9 @@ fun PatientFormScreen(database: LabBookLiteDatabase, navController: NavControlle
                                 return@launch
                             }
 
+                            val liteSer = context.getSharedPreferences("LabBookPrefs", Context.MODE_PRIVATE)
+                                .getInt("lite_ser", -1)
+
                             // Step 2 - Construct and insert patient
                             val newPatient = PatientEntity(
                                 id_data = 0,
@@ -217,19 +221,24 @@ fun PatientFormScreen(database: LabBookLiteDatabase, navController: NavControlle
                                 pat_city = city.text.ifBlank { null },
                                 pat_pbox = pbox.text.ifBlank { null },
                                 pat_district = district.text.ifBlank { null },
-                                pat_email = email.text.ifBlank { null }
+                                pat_email = email.text.ifBlank { null },
+                                pat_lite = liteSer
                             )
 
                             Log.i("PatientForm", "Inserted patient: $newPatient")
 
                             val insertedId = withContext(Dispatchers.IO) {
+                                // update patient
                                 if (patientId != null) {
-                                    // Update existing patient
-                                    val updatedPatient = newPatient.copy(id_data = patientId)
+                                    val existing = database.patientDao().getById(patientId)
+                                    val updatedPatient = newPatient.copy(
+                                        id_data = patientId,
+                                        pat_lite = existing?.pat_lite ?: newPatient.pat_lite
+                                    )
                                     database.patientDao().update(updatedPatient)
                                     patientId
+                                // insert patient
                                 } else {
-                                    // Insert new patient and retrieve the new id
                                     database.patientDao().insert(newPatient)
                                     database.patientDao().getByCode(newPatient.pat_code!!)?.id_data
                                 }
@@ -605,6 +614,8 @@ fun PatientFormScreen(database: LabBookLiteDatabase, navController: NavControlle
                     }
                 }
             }
+
+            Text(stringResource(R.string.coordonnees), style = MaterialTheme.typography.titleLarge)
 
             OutlinedTextField(
                 address,

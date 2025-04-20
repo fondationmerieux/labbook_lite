@@ -1,3 +1,5 @@
+// Fichier : SettingsScreen.kt
+
 package org.fondationmerieux.labbooklite.settings
 
 import android.util.Log
@@ -10,35 +12,37 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.core.content.edit
+import androidx.navigation.NavController
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import androidx.core.content.edit
-import androidx.navigation.NavController
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.fondationmerieux.labbooklite.R
+import org.fondationmerieux.labbooklite.adapter.DateJsonAdapter
+import org.fondationmerieux.labbooklite.database.model.SetupResponse
+import org.fondationmerieux.labbooklite.database.LabBookLiteDatabase
+import org.fondationmerieux.labbooklite.security.KeystoreHelper
 import java.io.File
 import java.io.FileOutputStream
 import java.util.concurrent.TimeUnit
 import android.util.Base64
 import androidx.compose.ui.res.stringResource
-import com.squareup.moshi.Moshi
-import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-import org.fondationmerieux.labbooklite.R
-import org.fondationmerieux.labbooklite.data.adapter.DateJsonAdapter
-import org.fondationmerieux.labbooklite.data.model.SetupResponse
-import org.fondationmerieux.labbooklite.database.LabBookLiteDatabase
 
 @Composable
-fun SettingsScreen(database: LabBookLiteDatabase, navController: NavController) {
+fun SettingsScreen(navController: NavController) {
+    val context = LocalContext.current
+    val dbPassword = KeystoreHelper.getOrCreatePassword(context)
+    val sharedPreferences = context.getSharedPreferences("LabBookPrefs", Context.MODE_PRIVATE)
     var serverUrl by remember { mutableStateOf("") }
     var deviceId by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    val context = LocalContext.current
-    val sharedPreferences = context.getSharedPreferences("LabBookPrefs", Context.MODE_PRIVATE)
     var showErrorDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
@@ -116,6 +120,8 @@ fun SettingsScreen(database: LabBookLiteDatabase, navController: NavController) 
                     val fullUrl = "${serverUrl.trim().removeSuffix("/")}/services/lite/setup/load"
                     val cleanLogin = deviceId.trim()
                     val cleanPwd = password.trim()
+                    val database = LabBookLiteDatabase.getDatabase(context, dbPassword)
+
                     fetchConfigurationPost(
                         login = cleanLogin,
                         pwd = cleanPwd,
@@ -150,18 +156,27 @@ fun SettingsScreen(database: LabBookLiteDatabase, navController: NavController) 
 
         Button(
             onClick = {
+                val sharedPreferences = context.getSharedPreferences("LabBookPrefs", Context.MODE_PRIVATE)
+                sharedPreferences.edit {
+                    putBoolean("logged_in", false)
+                }
+
                 context.deleteDatabase("labbooklite_encrypted.db")
                 Toast.makeText(context, "Database deleted", Toast.LENGTH_SHORT).show()
+
+                LabBookLiteDatabase.recreate(context, dbPassword)
             },
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
         ) {
-            Text(stringResource(R.string.r_initialiser_la_base_de_donn_es), color = MaterialTheme.colorScheme.onError)
+            Text(
+                stringResource(R.string.reinitialiser_la_base_de_donnees),
+                color = MaterialTheme.colorScheme.onError
+            )
         }
 
         Button(
             onClick = {
-                // TODO: Implement actual export logic
                 Toast.makeText(context, "Fonction d’envoi à LabBook à implémenter", Toast.LENGTH_SHORT).show()
             },
             modifier = Modifier.fillMaxWidth()
@@ -212,6 +227,7 @@ fun fetchConfigurationPost(
                 setup?.let {
                     database.userDao().insertAll(it.users)
                     database.patientDao().insertAll(it.patients)
+                    database.prescriberDao().insertAll(it.prescribers)
                     database.preferencesDao().insertAll(it.preferences)
                     database.nationalityDao().insertAll(it.nationality)
                     database.dictionaryDao().insertAll(it.dictionary)
@@ -223,6 +239,12 @@ fun fetchConfigurationPost(
                     database.analysisRequestDao().insertAll(it.analysis_request)
                     database.analysisResultDao().insertAll(it.analysis_result)
                     database.analysisValidationDao().insertAll(it.analysis_validation)
+
+                    val prefs = context.getSharedPreferences("LabBookPrefs", Context.MODE_PRIVATE)
+                    prefs.edit() {
+                        putInt("lite_ser", it.lite_ser)
+                        putString("lite_name", it.lite_name)
+                    }
 
                     val logoBase64 = it.logo_base64
                     if (!logoBase64.isNullOrEmpty()) {
@@ -238,22 +260,34 @@ fun fetchConfigurationPost(
                             Log.e("LabBookLite", "Error saving logo: ${e.message}", e)
                         }
                     }
+
+                    val userCount = database.userDao().getAll().size
+                    val analysisCount = database.analysisDao().getAll().size
+                    val prescriberCount = database.prescriberDao().getAll().size
+
+                    Log.d(
+                        "LabBookLite",
+                        "AFTER INSERT - user=$userCount, analysis=$analysisCount, prescriber=$prescriberCount"
+                    )
                 }
 
                 withContext(Dispatchers.Main) {
                     onSuccess()
-                    Toast.makeText(context,
-                        context.getString(R.string.la_configuration_a_t_r_cup_r_e_avec_succ_s), Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.la_configuration_a_t_r_cup_r_e_avec_succ_s),
+                        Toast.LENGTH_LONG
+                    ).show()
                     navController.navigate("login") {
                         popUpTo("settings") { inclusive = true }
                     }
                 }
             } else {
                 val errorMsg = when (response.code) {
-                    401 -> "Identifiant ou mot de passe invalide."
-                    403 -> "Accès refusé. Vérifiez vos autorisations."
-                    404 -> "Service non trouvé. Vérifier l'URL du serveur."
-                    500 -> "Erreur de serveur interne. Réessayez plus tard."
+                    401 -> "Invalid credentials."
+                    403 -> "Access denied."
+                    404 -> "Service not found."
+                    500 -> "Internal server error."
                     else -> "HTTP error ${response.code}: ${responseBody ?: "Empty response"}"
                 }
 

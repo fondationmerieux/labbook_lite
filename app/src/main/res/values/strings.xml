@@ -6,7 +6,7 @@
     <string name="identifiant">Identifiant</string>
     <string name="mot_de_passe">Mot de passe</string>
     <string name="r_cup_rer_la_configuration">Récupérer la configuration</string>
-    <string name="r_initialiser_la_base_de_donn_es">Réinitialiser la base de données</string>
+    <string name="reinitialiser_la_base_de_donnees">Réinitialiser la base de données</string>
     <string name="envoyer_les_donn_es_vers_labbook">Envoyer les données vers LabBook</string>
     <string name="la_configuration_a_t_r_cup_r_e_avec_succ_s">La configuration a été récupérée avec succès</string>
     <string name="configuration">Configuration</string>
@@ -66,4 +66,7 @@
     <string name="heure_de_reception_du_dossier">Heure de réception du dossier</string>
     <string name="date_de_prescription">Date de prescription</string>
     <string name="rechercher_une_analyse">Rechercher une analyse</string>
+    <string name="coordonnees">Coordonnées</string>
+    <string name="rechercher_un_prescripteur">Rechercher un prescripteur</string>
+    <string name="prescripteur">Prescripteur</string>
 </resources>

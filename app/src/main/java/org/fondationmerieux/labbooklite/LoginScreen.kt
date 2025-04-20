@@ -63,6 +63,7 @@ fun LoginScreen(database: LabBookLiteDatabase, navController: NavController) {
                                 putString("role_type", user.role_type)
                                 putString("firstname", user.firstname)
                                 putString("lastname", user.lastname)
+                                putInt("user_id", user.id_data)
                                 putBoolean("logged_in", true) // Flag used to restore session on next app launch
                                 apply()
                             }

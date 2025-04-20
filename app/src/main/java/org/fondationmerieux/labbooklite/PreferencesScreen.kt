@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.fondationmerieux.labbooklite.database.LabBookLiteDatabase
-import org.fondationmerieux.labbooklite.data.entity.PreferencesEntity
+import org.fondationmerieux.labbooklite.database.entity.PreferencesEntity
 
 @Composable
 fun PreferencesScreen(database: LabBookLiteDatabase) {
