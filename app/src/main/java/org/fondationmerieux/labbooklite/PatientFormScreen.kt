@@ -121,7 +121,7 @@ fun PatientFormScreen(database: LabBookLiteDatabase, navController: NavControlle
                     secondName = TextFieldValue(existing.pat_midname.orEmpty())
                     maidenName = TextFieldValue(existing.pat_maiden.orEmpty())
                     firstname = TextFieldValue(existing.pat_firstname.orEmpty())
-                    codeLab = TextFieldValue(existing.pat_code_lab.orEmpty())
+                    codeLab = TextFieldValue(existing.pat_code.orEmpty())
                     birthField = TextFieldValue(existing.pat_birth.orEmpty())
                     age = existing.pat_age?.toString() ?: ""
                     ageUnit = existing.pat_age_unit
@@ -141,7 +141,7 @@ fun PatientFormScreen(database: LabBookLiteDatabase, navController: NavControlle
                     city = TextFieldValue(existing.pat_city.orEmpty())
                     district = TextFieldValue(existing.pat_district.orEmpty())
                     profession = TextFieldValue(existing.pat_profession.orEmpty())
-                    generatedCode.value = existing.pat_code ?: ""
+                    generatedCode.value = existing.pat_code_lab.orEmpty()
                 }
             } else {
                 val existingCodes = database.patientDao().getAll().mapNotNull { it.pat_code }
@@ -156,16 +156,21 @@ fun PatientFormScreen(database: LabBookLiteDatabase, navController: NavControlle
 
     Scaffold(
         bottomBar = {
-            Box(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                contentAlignment = Alignment.Center
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
+                OutlinedButton(onClick = {
+                    navController.popBackStack()
+                }) {
+                    Text(stringResource(R.string.retour))
+                }
+
                 Button(
                     onClick = {
                         coroutineScope.launch {
-                            // Step 1 - Check duplicate pat_code_lab
                             val existing = withContext(Dispatchers.IO) {
                                 if (codeLab.text.isNotBlank()) {
                                     database.patientDao().getByCodeLab(codeLab.text.trim())
@@ -176,11 +181,10 @@ fun PatientFormScreen(database: LabBookLiteDatabase, navController: NavControlle
                                 return@launch
                             }
 
-                            // Step 1 bis - Validate required fields
                             val missingFields = mutableListOf<String>()
                             if (selectedSexId == null) missingFields.add(context.getString(R.string.sexe))
                             if (age.isBlank() || ageUnit == null) missingFields.add(context.getString(R.string.age))
-                            if (!isAnonymous  && nom.text.isBlank()) missingFields.add(context.getString(R.string.nom))
+                            if (!isAnonymous && nom.text.isBlank()) missingFields.add(context.getString(R.string.nom))
 
                             if (missingFields.isNotEmpty()) {
                                 Toast.makeText(
@@ -194,7 +198,6 @@ fun PatientFormScreen(database: LabBookLiteDatabase, navController: NavControlle
                             val liteSer = context.getSharedPreferences("LabBookPrefs", Context.MODE_PRIVATE)
                                 .getInt("lite_ser", -1)
 
-                            // Step 2 - Construct and insert patient
                             val newPatient = PatientEntity(
                                 id_data = 0,
                                 pat_ano = anonymousValue,
@@ -225,10 +228,7 @@ fun PatientFormScreen(database: LabBookLiteDatabase, navController: NavControlle
                                 pat_lite = liteSer
                             )
 
-                            Log.i("PatientForm", "Inserted patient: $newPatient")
-
                             val insertedId = withContext(Dispatchers.IO) {
-                                // update patient
                                 if (patientId != null) {
                                     val existing = database.patientDao().getById(patientId)
                                     val updatedPatient = newPatient.copy(
@@ -237,22 +237,19 @@ fun PatientFormScreen(database: LabBookLiteDatabase, navController: NavControlle
                                     )
                                     database.patientDao().update(updatedPatient)
                                     patientId
-                                // insert patient
                                 } else {
                                     database.patientDao().insert(newPatient)
                                     database.patientDao().getByCode(newPatient.pat_code!!)?.id_data
                                 }
                             }
 
-                            // Step 3 - Navigate to next screen
                             if (insertedId != null) {
                                 navController.navigate("patient_analysis_request/$insertedId")
                             } else {
                                 Toast.makeText(context, "Erreur lors de la récupération du patient", Toast.LENGTH_LONG).show()
                             }
                         }
-                    },
-                    modifier = Modifier.fillMaxWidth()
+                    }
                 ) {
                     Text(stringResource(R.string.enregistrer))
                 }

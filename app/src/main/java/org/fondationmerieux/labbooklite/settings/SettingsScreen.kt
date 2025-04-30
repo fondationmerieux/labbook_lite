@@ -33,7 +33,13 @@ import java.io.File
 import java.io.FileOutputStream
 import java.util.concurrent.TimeUnit
 import android.util.Base64
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 
 @Composable
 fun SettingsScreen(navController: NavController) {
@@ -46,6 +52,21 @@ fun SettingsScreen(navController: NavController) {
     var showErrorDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
+
+    val jsonImportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let {
+            try {
+                val json = context.contentResolver.openInputStream(it)?.bufferedReader().use { reader -> reader?.readText() }
+                if (!json.isNullOrEmpty()) {
+                    importSetupJson(json, context, navController)
+                } else {
+                    Toast.makeText(context, "Fichier vide", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(context, "Erreur lecture fichier : ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
 
     LaunchedEffect(Unit) {
         serverUrl = sharedPreferences.getString("server_url", "") ?: ""
@@ -156,6 +177,21 @@ fun SettingsScreen(navController: NavController) {
 
         Button(
             onClick = {
+                jsonImportLauncher.launch("application/json")
+            },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF00796B),
+                contentColor = Color.White
+            )
+        ) {
+            Icon(Icons.Default.BugReport, contentDescription = "debug")
+            Spacer(Modifier.width(8.dp))
+            Text("Importer une configuration JSON (DEBUG)", fontWeight = FontWeight.Bold)
+        }
+
+        Button(
+            onClick = {
                 val sharedPreferences = context.getSharedPreferences("LabBookPrefs", Context.MODE_PRIVATE)
                 sharedPreferences.edit {
                     putBoolean("logged_in", false)
@@ -167,12 +203,14 @@ fun SettingsScreen(navController: NavController) {
                 LabBookLiteDatabase.recreate(context, dbPassword)
             },
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-        ) {
-            Text(
-                stringResource(R.string.reinitialiser_la_base_de_donnees),
-                color = MaterialTheme.colorScheme.onError
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF00796B),
+                contentColor = Color.White
             )
+        ) {
+            Icon(Icons.Default.BugReport, contentDescription = "Reset database", tint = Color.White)
+            Spacer(Modifier.width(8.dp))
+            Text("Réinitialiser la base de données (DEBUG)", fontWeight = FontWeight.Bold)
         }
 
         Button(
@@ -244,6 +282,7 @@ fun fetchConfigurationPost(
                     prefs.edit() {
                         putInt("lite_ser", it.lite_ser)
                         putString("lite_name", it.lite_name)
+                        putString("lite_report_pwd", it.lite_report_pwd)
                     }
 
                     val logoBase64 = it.logo_base64
@@ -300,6 +339,78 @@ fun fetchConfigurationPost(
             Log.e("LabBookLite", "Request exception: ${e.message}", e)
             withContext(Dispatchers.Main) {
                 onError("Error: ${e.message}")
+            }
+        }
+    }
+}
+
+fun importSetupJson(json: String, context: Context, navController: NavController) {
+    val dbPassword = KeystoreHelper.getOrCreatePassword(context)
+    val database = LabBookLiteDatabase.getDatabase(context, dbPassword)
+
+    CoroutineScope(Dispatchers.IO).launch {
+        try {
+            val moshi = Moshi.Builder()
+                .add(DateJsonAdapter())
+                .add(KotlinJsonAdapterFactory())
+                .build()
+            val adapter = moshi.adapter(SetupResponse::class.java)
+            val setup = adapter.fromJson(json)
+
+            setup?.let {
+                database.userDao().insertAll(it.users)
+                database.patientDao().insertAll(it.patients)
+                database.prescriberDao().insertAll(it.prescribers)
+                database.preferencesDao().insertAll(it.preferences)
+                database.nationalityDao().insertAll(it.nationality)
+                database.dictionaryDao().insertAll(it.dictionary)
+                database.analysisDao().insertAll(it.analysis)
+                database.anaLinkDao().insertAll(it.ana_link)
+                database.anaVarDao().insertAll(it.ana_var)
+                database.sampleDao().insertAll(it.sample)
+                database.recordDao().insertAll(it.record)
+                database.analysisRequestDao().insertAll(it.analysis_request)
+                database.analysisResultDao().insertAll(it.analysis_result)
+                database.analysisValidationDao().insertAll(it.analysis_validation)
+
+                val prefs = context.getSharedPreferences("LabBookPrefs", Context.MODE_PRIVATE)
+                prefs.edit {
+                    putInt("lite_ser", it.lite_ser)
+                    putString("lite_name", it.lite_name)
+                    putString("lite_report_pwd", it.lite_report_pwd)
+
+                    // Save fallback configuration values
+                    putString("device_id", "imported-device")
+                    putString("server_url", "from-json-import")
+                }
+
+                it.logo_base64?.let { logoBase64 ->
+                    try {
+                        val imageBytes = android.util.Base64.decode(logoBase64, android.util.Base64.DEFAULT)
+                        val file = File(context.filesDir, "logo.png")
+                        FileOutputStream(file).use { fos -> fos.write(imageBytes) }
+                        Log.d("LabBookLite", "Logo imported from JSON at ${file.absolutePath}")
+                    } catch (e: Exception) {
+                        Log.e("LabBookLite", "Logo import error: ${e.message}", e)
+                    }
+                }
+
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Configuration importée avec succès", Toast.LENGTH_LONG).show()
+
+                    navController.navigate("login") {
+                        popUpTo("settings") { inclusive = true }
+                    }
+                }
+            } ?: run {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Erreur de lecture du fichier JSON", Toast.LENGTH_LONG).show()
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("LabBookLite", "Erreur import JSON: ${e.message}", e)
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, "Erreur lors de l'import : ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }

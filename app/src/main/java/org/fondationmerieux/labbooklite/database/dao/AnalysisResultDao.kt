@@ -23,4 +23,15 @@ interface AnalysisResultDao {
 
     @Query("SELECT MAX(id) FROM analysis_result")
     suspend fun getMaxId(): Int?
+
+    @Query("""
+    SELECT ar.*
+    FROM analysis_result ar
+    INNER JOIN analysis_request req ON ar.analysisId = req.id
+    WHERE req.recordId = :recordId
+""")
+    suspend fun getByRecord(recordId: Int): List<AnalysisResultEntity>
+
+    @Query("UPDATE analysis_result SET value = :value WHERE id = :id")
+    suspend fun updateValue(id: Int, value: String)
 }

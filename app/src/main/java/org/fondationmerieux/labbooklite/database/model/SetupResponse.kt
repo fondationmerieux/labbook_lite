@@ -21,6 +21,7 @@ import org.fondationmerieux.labbooklite.database.entity.UserEntity
 data class SetupResponse(
     val lite_ser: Int,
     val lite_name: String,
+    val lite_report_pwd: String,
     val users: List<UserEntity>,
     val patients: List<PatientEntity>,
     val preferences: List<PreferencesEntity>,

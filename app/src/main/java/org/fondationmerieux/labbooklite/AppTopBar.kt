@@ -104,7 +104,7 @@ fun AppTopBar(navController: NavController, showMenu: Boolean = true) {
                             text = { Text(stringResource(R.string.liste_des_dossiers)) },
                             onClick = {
                                 menuExpanded.value = false
-                                navController.navigate("list_record")
+                                navController.navigate("record_list")
                             }
                         )
                         HorizontalDivider()

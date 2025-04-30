@@ -1,5 +1,8 @@
+package org.fondationmerieux.labbooklite
+
 import android.content.Intent
-import android.net.Uri
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -8,12 +11,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.text.ClickableText
+import androidx.core.net.toUri
 
 @Composable
 fun AboutScreen() {
@@ -33,7 +38,7 @@ fun AboutScreen() {
         append("- ")
 
         pushStringAnnotation(tag = "URL", annotation = "https://www.fondation-merieux.org/")
-        withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)) {
+        withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, textDecoration = TextDecoration.Underline)) {
             append("Fondation Mérieux")
         }
         pop()
@@ -41,7 +46,7 @@ fun AboutScreen() {
 
         append("LabBook Lite permet d’étendre l’usage de LabBook (")
         pushStringAnnotation(tag = "URL", annotation = "https://www.lab-book.org/")
-        withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)) {
+        withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, textDecoration = TextDecoration.Underline)) {
             append("https://www.lab-book.org/")
         }
         pop()
@@ -53,7 +58,7 @@ fun AboutScreen() {
 
         append("LabBook Lite est une application développée par ")
         pushStringAnnotation(tag = "URL", annotation = "https://www.aegle.fr/")
-        withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)) {
+        withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, textDecoration = TextDecoration.Underline)) {
             append("AEGLE")
         }
         pop()
@@ -63,20 +68,31 @@ fun AboutScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .padding(16.dp)
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        ClickableText(
+        val layoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }
+
+        Text(
             text = annotatedText,
             style = MaterialTheme.typography.bodyMedium.copy(textAlign = TextAlign.Start),
-            onClick = { offset ->
-                annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
-                    .firstOrNull()?.let { annotation ->
-                        val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(annotation.item))
-                        context.startActivity(browserIntent)
+            modifier = Modifier
+                .fillMaxWidth()
+                .pointerInput(Unit) {
+                    detectTapGestures { tapOffset ->
+                        layoutResult.value?.let { layout ->
+                            val position = layout.getOffsetForPosition(tapOffset)
+                            annotatedText.getStringAnnotations(tag = "URL", start = position, end = position)
+                                .firstOrNull()?.let { annotation ->
+                                    val intent = Intent(Intent.ACTION_VIEW, annotation.item.toUri())
+                                    context.startActivity(intent)
+                                }
+                        }
                     }
-            }
+                },
+            onTextLayout = { layoutResult.value = it }
         )
 
         Spacer(modifier = Modifier.weight(1f))

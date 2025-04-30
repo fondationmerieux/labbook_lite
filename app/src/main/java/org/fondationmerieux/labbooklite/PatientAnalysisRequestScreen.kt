@@ -428,8 +428,12 @@ fun PatientAnalysisRequestScreen(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        val ana = analyses.firstOrNull { it.id == analysis.id }
+                        val loinc = ana?.ana_loinc?.takeIf { it.isNotBlank() } ?: ""
+                        val displayText = if (loinc.isNotEmpty()) "$code / $loinc - $name" else "$code - $name"
+
                         Text(
-                            "$code - $name",
+                            text = displayText,
                             style = MaterialTheme.typography.titleSmall,
                             modifier = Modifier.weight(1f)
                         )

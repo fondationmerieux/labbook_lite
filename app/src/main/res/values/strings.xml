@@ -69,4 +69,8 @@
     <string name="coordonnees">Coordonnées</string>
     <string name="rechercher_un_prescripteur">Rechercher un prescripteur</string>
     <string name="prescripteur">Prescripteur</string>
+    <string name="retour">Retour</string>
+    <string name="statut">Statut\n</string>
+    <string name="dossier">Dossier</string>
+    <string name="patient">Patient</string>
 </resources>

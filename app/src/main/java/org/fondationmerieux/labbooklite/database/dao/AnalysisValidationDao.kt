@@ -23,4 +23,10 @@ interface AnalysisValidationDao {
 
     @Query("SELECT MAX(id) FROM analysis_validation")
     suspend fun getMaxId(): Int?
+
+    @Query("DELETE FROM analysis_validation")
+    suspend fun clearValidations()
+
+    @Query("DELETE FROM analysis_validation WHERE resultId = :resultId")
+    fun deleteByResultId(resultId: Int)
 }

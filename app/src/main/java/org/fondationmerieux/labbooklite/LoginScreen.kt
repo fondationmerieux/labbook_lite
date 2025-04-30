@@ -18,11 +18,14 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import android.content.Context
+import android.view.inputmethod.InputMethodManager
+import androidx.compose.ui.platform.LocalView
 
 @SuppressLint("SetTextI18n")
 @Composable
 fun LoginScreen(database: LabBookLiteDatabase, navController: NavController) {
     val context = LocalContext.current
+    val view = LocalView.current
     val sharedPrefs = context.getSharedPreferences("LabBookPrefs", Context.MODE_PRIVATE)
 
     AndroidViewBinding(ActivityLoginBinding::inflate) {
@@ -67,6 +70,10 @@ fun LoginScreen(database: LabBookLiteDatabase, navController: NavController) {
                                 putBoolean("logged_in", true) // Flag used to restore session on next app launch
                                 apply()
                             }
+
+                            val inputManager = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                            inputManager.hideSoftInputFromWindow(view.windowToken, 0)
+
                             Toast.makeText(context,
                                 context.getString(R.string.connexion_reussie), Toast.LENGTH_SHORT).show()
                             navController.navigate("home") {

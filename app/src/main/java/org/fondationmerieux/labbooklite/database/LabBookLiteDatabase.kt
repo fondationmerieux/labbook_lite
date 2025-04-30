@@ -61,7 +61,7 @@ import org.fondationmerieux.labbooklite.database.entity.UserEntity
         AnalysisValidationEntity::class,
         PrescriberEntity::class
     ],
-    version = 5,
+    version = 1,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

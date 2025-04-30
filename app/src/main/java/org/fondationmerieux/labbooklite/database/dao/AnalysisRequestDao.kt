@@ -30,4 +30,6 @@ interface AnalysisRequestDao {
     @Query("SELECT MAX(id) FROM analysis_request")
     suspend fun getMaxId(): Int?
 
+    @Query("SELECT * FROM analysis_request WHERE recordId = :recordId")
+    suspend fun getByRecord(recordId: Int): List<AnalysisRequestEntity>
 }

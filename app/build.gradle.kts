@@ -53,7 +53,7 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(platform(libs.androidx.compose.bom))
 
-    implementation("androidx.compose.material:material-icons-extended:1.0.0")
+    implementation("androidx.compose.material:material-icons-extended:1.7.8")
 
     // Jetpack Compose
     implementation(libs.androidx.ui)
@@ -110,5 +110,8 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
 
     implementation(libs.androidx.foundation)
+
+    implementation(libs.itext7.kernel)
+    implementation(libs.itext7.layout)
 
 }

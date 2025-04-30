@@ -2,6 +2,7 @@ package org.fondationmerieux.labbooklite
 
 import android.app.DatePickerDialog
 import android.util.Log
+import androidx.compose.foundation.background
 import androidx.compose.runtime.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.unit.dp
@@ -12,6 +13,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -62,6 +66,7 @@ fun RecordListScreen(database: LabBookLiteDatabase, navController: NavController
             val results = resultDao.getAll()
             val validations = validationDao.getAll()
 
+            /*
             Log.i("LabBookLite", "=== RECORDS ===")
             records.forEach { Log.i("LabBookLite", it.toString()) }
 
@@ -76,6 +81,7 @@ fun RecordListScreen(database: LabBookLiteDatabase, navController: NavController
 
             Log.i("LabBookLite", "=== ANALYSIS_VALIDATION ===")
             validations.forEach { Log.i("LabBookLite", it.toString()) }
+            */
         }
 
     }
@@ -181,9 +187,64 @@ fun RecordRow(record: RecordWithPatient, navController: NavController) {
             val r = record.record
             val p = record.patient
 
-            Text("Numéro : ${r.rec_num_lite ?: "?"} — ${r.rec_date_receipt ?: "?"}")
-            Text("Patient : ${p?.pat_code ?: ""} ${p?.pat_name ?: ""} ${p?.pat_firstname ?: ""}")
-            Text("Statut : ${r.status ?: "?"}")
+            val recordNumber = r.rec_num_lite?.takeLast(4)?.toIntOrNull()?.toString() ?: r.id_data.toString()
+            val statusLabel = when (r.status) {
+                182 -> Triple("A", Color(0xFFF08739), Color(0xFF000000))
+                253 -> Triple("I", Color(0xFFF08739), Color(0xFF000000))
+                254 -> Triple("T", Color(0xFF00ADEE), Color(0xFF000000))
+                255 -> Triple("I", Color(0xFF00ADEE), Color(0xFF000000))
+                256 -> Triple("B", Color(0xFF8330E2), Color.White)
+                else -> Triple("?", Color.LightGray, Color.Black)
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .background(statusLabel.second, shape = MaterialTheme.shapes.small)
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = statusLabel.first,
+                            color = statusLabel.third,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .background(Color(0xFFC7AD70), shape = MaterialTheme.shapes.small)
+                            .padding(horizontal = 12.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = recordNumber,
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+
+                    if (!r.rec_num_int.isNullOrBlank()) {
+                        Text(
+                            text = "(${r.rec_num_int})",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+
+                    Text(
+                        text = r.rec_date_receipt ?: "—",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+
+                Text(
+                    text = stringResource(R.string.patient) + " : ${p?.pat_code ?: ""} ${p?.pat_name ?: ""} ${p?.pat_firstname ?: ""}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TextButton(onClick = {
@@ -192,7 +253,9 @@ fun RecordRow(record: RecordWithPatient, navController: NavController) {
                     Text("Dossier administratif")
                 }
 
-                TextButton(onClick = { /* TODO: Résultats */ }) {
+                TextButton(onClick = {
+                    navController.navigate("record_results/${record.record.id_data}")
+                }) {
                     Text("Résultats")
                 }
 

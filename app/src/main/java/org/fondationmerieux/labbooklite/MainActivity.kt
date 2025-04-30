@@ -1,7 +1,7 @@
 package org.fondationmerieux.labbooklite
 
-import AboutScreen
 import android.content.Context
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -114,8 +114,16 @@ fun MainScreen(database: LabBookLiteDatabase) {
                     composable("record_admin/{recordId}") { backStackEntry ->
                         val recordId = backStackEntry.arguments?.getString("recordId")?.toIntOrNull()
                         if (recordId != null) {
-                            AdministrativeRecordScreen(recordId = recordId, database = database)
+                            AdministrativeRecordScreen(recordId = recordId, database = database, navController = navController)
                         }
+                    }
+
+                    composable(
+                        "record_results/{recordId}",
+                        arguments = listOf(navArgument("recordId") { type = NavType.IntType })
+                    ) { backStackEntry ->
+                        val recordId = backStackEntry.arguments?.getInt("recordId") ?: return@composable
+                        RecordResultsScreen(recordId = recordId, database = database, navController = navController)
                     }
 
                     composable("patient_form") {
@@ -168,6 +176,11 @@ fun MainScreen(database: LabBookLiteDatabase) {
                     composable("about") {
                         AboutScreen()
                     }
+
+                    composable("pdf_viewer/{filePath}") { backStackEntry ->
+                        val pdfPath = Uri.decode(backStackEntry.arguments?.getString("filePath") ?: "")
+                        PdfViewerScreen(filePath = pdfPath, navController = navController)
+                    }
                 }
             }
         )
@@ -188,9 +201,11 @@ suspend fun isAppInitialized(database: LabBookLiteDatabase): Boolean {
         val userOk = database.userDao().getAll().isNotEmpty()
         val allAnalysis = database.analysisDao().getAll()
         val analysisOk = allAnalysis.isNotEmpty()
+        /*
         allAnalysis.forEach {
             Log.i("LabBookLite", "analysis: id=${it.id_data}, code=${it.code}, name=${it.name}, bio_product=${it.bio_product}")
         }
+        */
 
         val linkOk = database.anaLinkDao().getAll().isNotEmpty()
         val varOk = database.anaVarDao().getAll().isNotEmpty()
