@@ -61,7 +61,7 @@ import org.fondationmerieux.labbooklite.database.entity.UserEntity
         AnalysisValidationEntity::class,
         PrescriberEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -93,16 +93,40 @@ abstract class LabBookLiteDatabase : RoomDatabase() {
          */
         fun getDatabase(context: Context, password: String): LabBookLiteDatabase {
             return INSTANCE ?: synchronized(this) {
-                val passphrase: ByteArray = SQLiteDatabase.getBytes(password.toCharArray())
+                val dbName = "labbooklite_encrypted.db"
+                val dbFile = context.getDatabasePath(dbName)
+
+                // Initialize SQLCipher native libraries
+                SQLiteDatabase.loadLibs(context)
+
+                // Convert password to char array for SQLCipher compatibility
+                val passphraseChars = password.toCharArray()
+
+                // If the database exists, verify it can be opened with the given password
+                if (dbFile.exists()) {
+                    try {
+                        val testDb = SQLiteDatabase.openDatabase(
+                            dbFile.absolutePath,
+                            passphraseChars,
+                            null,
+                            SQLiteDatabase.OPEN_READONLY
+                        )
+                        testDb.close()
+                    } catch (e: Exception) {
+                        dbFile.delete()
+                    }
+                }
+
+                val passphrase = SQLiteDatabase.getBytes(passphraseChars)
                 val factory = SupportFactory(passphrase)
 
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     LabBookLiteDatabase::class.java,
-                    "labbooklite_encrypted.db"
+                    dbName
                 )
-                    .openHelperFactory(factory) // 🔒 Uses SQLCipher for encryption
-                    .fallbackToDestructiveMigration() // Deletes and recreates DB if schema changes
+                    .openHelperFactory(factory)
+                    .fallbackToDestructiveMigration()
                     .build()
 
                 INSTANCE = instance
@@ -113,15 +137,6 @@ abstract class LabBookLiteDatabase : RoomDatabase() {
         fun recreate(context: Context, password: String) {
             INSTANCE = null
             getDatabase(context, password)
-        }
-
-        private fun createEncryptedDatabase(context: Context, password: String): LabBookLiteDatabase {
-            val passphrase = SQLiteDatabase.getBytes(password.toCharArray())
-            val factory = SupportFactory(passphrase)
-            return Room.databaseBuilder(context, LabBookLiteDatabase::class.java, "labbooklite_encrypted.db")
-                .openHelperFactory(factory)
-                .fallbackToDestructiveMigration()
-                .build()
         }
     }
 }

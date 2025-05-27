@@ -20,10 +20,10 @@ interface PatientDao {
     suspend fun getById(id: Int): PatientEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(entries: List<PatientEntity>)
+    suspend fun insertAll(entries: List<PatientEntity>): List<Long>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(entry: PatientEntity)
+    suspend fun insert(entry: PatientEntity): Long
 
     @Update
     suspend fun update(patient: PatientEntity)

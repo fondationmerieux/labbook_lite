@@ -31,69 +31,88 @@ fun PatientSearchScreen(
 
     val coroutineScope = rememberCoroutineScope()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-    ) {
-        Text(
-            text = stringResource(R.string.rechercher_un_patient),
-            style = MaterialTheme.typography.headlineSmall
-        )
-
-        OutlinedTextField(
-            value = queryText,
-            onValueChange = {
-                queryText = it
-                if (queryText.length >= 3) {
-                    coroutineScope.launch {
-                        results = withContext(Dispatchers.IO) {
-                            patientDao.searchPatients(queryText)
-                        }
-                    }
-                } else {
-                    results = emptyList()
-                }
-            },
-            label = { Text(stringResource(R.string.nom_prenom_code_telephone_ou_email)) },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Button(
-            onClick = { navController.navigate("patient_form") },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(stringResource(R.string.creer_un_nouveau_patient))
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        if (results.isNotEmpty()) {
-            Text(stringResource(R.string.resultats), style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
-
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxHeight()
+    Scaffold(
+        bottomBar = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                horizontalArrangement = Arrangement.Start
             ) {
-                items(results) { patient ->
-                    PatientItem(patient = patient, onClick = {
-                        navController.navigate("patient_analysis_request/${patient.id_data}")
-                        Toast.makeText(
-                            context,
-                            context.getString(R.string.patient_selectionne, patient.pat_name),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    })
+                OutlinedButton(onClick = { navController.popBackStack() }) {
+                    Text(stringResource(id = R.string.retour))
                 }
             }
-        } else if (queryText.length >= 3) {
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        ) {
             Text(
-                text = stringResource(R.string.aucun_patient_trouve),
-                style = MaterialTheme.typography.bodyMedium
+                text = stringResource(R.string.rechercher_un_patient),
+                style = MaterialTheme.typography.headlineSmall
             )
+
+            OutlinedTextField(
+                value = queryText,
+                onValueChange = {
+                    queryText = it
+                    if (queryText.length >= 3) {
+                        coroutineScope.launch {
+                            results = withContext(Dispatchers.IO) {
+                                patientDao.searchPatients(queryText)
+                            }
+                        }
+                    } else {
+                        results = emptyList()
+                    }
+                },
+                label = { Text(stringResource(R.string.nom_prenom_code_telephone_ou_email)) },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Button(
+                onClick = { navController.navigate("patient_form") },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(stringResource(R.string.creer_un_nouveau_patient))
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (results.isNotEmpty()) {
+                Text(
+                    stringResource(R.string.resultats),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    items(results) { patient ->
+                        PatientItem(patient = patient, onClick = {
+                            navController.navigate("patient_analysis_request/${patient.id_data}")
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.patient_selectionne, patient.pat_name),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        })
+                    }
+                }
+            } else if (queryText.length >= 3) {
+                Text(
+                    text = stringResource(R.string.aucun_patient_trouve),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
         }
     }
 }

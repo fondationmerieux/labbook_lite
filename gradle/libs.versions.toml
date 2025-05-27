@@ -1,6 +1,6 @@
 [versions]
 # Android & Kotlin
-agp = "8.9.2"
+agp = "8.10.0"
 itext = "8.0.2"
 kotlin = "2.1.10"
 
@@ -101,6 +101,7 @@ androidx-security-crypto = { module = "androidx.security:security-crypto", versi
 # Networking
 itext7-kernel = { module = "com.itextpdf:kernel", version = "8.0.2" }
 itext7-layout = { module = "com.itextpdf:layout", version = "8.0.2" }
+itext7-bouncycastle-adapter = { module = "com.itextpdf:bouncy-castle-adapter", version = "8.0.2" }
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 
 # JSON

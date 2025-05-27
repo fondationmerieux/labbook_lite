@@ -1,9 +1,12 @@
 package org.fondationmerieux.labbooklite.database.dao
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
+import androidx.room.Update
 import org.fondationmerieux.labbooklite.database.entity.RecordEntity
 import org.fondationmerieux.labbooklite.database.model.RecordWithPatient
 
@@ -21,14 +24,15 @@ interface RecordDao {
     suspend fun getById(id: Int): RecordEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(entry: RecordEntity)
+    suspend fun insert(entry: RecordEntity): Long
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(entries: List<RecordEntity>)
+    suspend fun insertAll(entries: List<RecordEntity>): List<Long>
 
     @Query("DELETE FROM record")
     suspend fun deleteAll()
 
+    @Transaction
     @Query("SELECT * FROM record")
     suspend fun getAllWithPatient(): List<RecordWithPatient>
 
@@ -43,4 +47,10 @@ interface RecordDao {
 
     @Query("SELECT COUNT(*) FROM record")
     fun count(): Int
+
+    @Update
+    suspend fun update(record: RecordEntity)
+
+    @Delete
+    fun delete(record: RecordEntity)
 }

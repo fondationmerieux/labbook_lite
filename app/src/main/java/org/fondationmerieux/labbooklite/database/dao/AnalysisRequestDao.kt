@@ -19,10 +19,10 @@ interface AnalysisRequestDao {
     suspend fun getById(id: Int): AnalysisRequestEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(entry: AnalysisRequestEntity)
+    suspend fun insert(entry: AnalysisRequestEntity): Long
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(entries: List<AnalysisRequestEntity>)
+    suspend fun insertAll(entries: List<AnalysisRequestEntity>): List<Long>
 
     @Query("DELETE FROM analysis_request")
     suspend fun deleteAll()
@@ -32,4 +32,29 @@ interface AnalysisRequestDao {
 
     @Query("SELECT * FROM analysis_request WHERE recordId = :recordId")
     suspend fun getByRecord(recordId: Int): List<AnalysisRequestEntity>
+
+    @Query("DELETE FROM analysis_request WHERE recordId = :recordId")
+    fun deleteByRecord(recordId: Int)
+
+    @Query("""
+    SELECT COUNT(DISTINCT ar.recordId)
+    FROM analysis_request ar
+    INNER JOIN analysis_result res ON ar.id = res.analysisId
+    WHERE ar.isUrgent = 4
+    AND res.id NOT IN (
+        SELECT resultId FROM analysis_validation WHERE validationType = 252
+    )
+""")
+    suspend fun countUrgentUnvalidatedRecords(): Int
+
+    @Query("""
+    SELECT DISTINCT ar.recordId
+    FROM analysis_request ar
+    INNER JOIN analysis_result res ON ar.id = res.analysisId
+    WHERE ar.isUrgent = 4
+    AND res.id NOT IN (
+        SELECT resultId FROM analysis_validation WHERE validationType = 252
+    )
+""")
+    suspend fun getRecordIdsWithUrgentUnvalidated(): List<Int>
 }

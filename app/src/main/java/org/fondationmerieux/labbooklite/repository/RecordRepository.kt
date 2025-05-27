@@ -32,14 +32,13 @@ class RecordRepository(private val context: Context, private val db: LabBookLite
 
         val now = LocalDateTime.now()
         val dateSave = now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-
         val recNumLite = generateRecordLiteNumber(recordDao)
-        val recordId = (recordDao.getMaxRecordId() ?: 0) + 1
 
+        // Insert record with auto-generated ID
         val recordEntity = RecordEntity(
-            id_data = recordId,
+            id_data = 0,
             patient_id = record.patientId,
-            type = null,
+            type = 183, // External type
             rec_date_receipt = "${record.receivedDate} ${record.receivedTime}",
             prescriber = record.prescriberId,
             prescription_date = record.prescriptionDate,
@@ -53,28 +52,26 @@ class RecordRepository(private val context: Context, private val db: LabBookLite
             rec_num_lite = recNumLite,
             rec_lite = recLite
         )
+        val recordId = recordDao.insert(recordEntity).toInt()
 
-        recordDao.insert(recordEntity)
-
-        val requestIdMap = mutableMapOf<Int, Int>()  // analysisRef -> inserted requestId
-        var reqIdCounter = (analysisRequestDao.getMaxId() ?: 0)
+        // Insert requests with auto-generated IDs
         val requests = (analyses + acts).map {
-            reqIdCounter += 1
-            requestIdMap[it.analysisId] = reqIdCounter
             AnalysisRequestEntity(
-                id = reqIdCounter,
+                id = 0,
                 recordId = recordId,
                 analysisRef = it.analysisId,
                 isUrgent = if (it.urgent) 4 else 5
             )
         }
-        analysisRequestDao.insertAll(requests)
+        val requestInsertedIds = analysisRequestDao.insertAll(requests)
+        val requestIdMap = (analyses + acts).mapIndexed { index, req ->
+            req.analysisId to requestInsertedIds[index].toInt()
+        }.toMap()
 
-        var sampleIdCounter = (sampleDao.getMaxId() ?: 0)
+        // Insert samples with auto-generated IDs
         val sampleEntities = samples.map {
-            sampleIdCounter += 1
             SampleEntity(
-                id_data = sampleIdCounter,
+                id_data = 0,
                 samp_date = parseDate("${it.prelDate} ${it.prelTime}"),
                 sample_type = it.productType,
                 status = it.status,
@@ -91,41 +88,35 @@ class RecordRepository(private val context: Context, private val db: LabBookLite
         }
         sampleDao.insertAll(sampleEntities)
 
-        var resultIdCounter = (analysisResultDao.getMaxId() ?: 0)
-        val resultEntities = mutableListOf<AnalysisResultEntity>()
-        results.forEach { result ->
-            val analysisRequestId = requestIdMap[result.analysisId] ?: return@forEach
+        // Insert results with auto-generated IDs
+        val resultEntities = results.flatMap { result ->
+            val analysisRequestId = requestIdMap[result.analysisId] ?: return@flatMap emptyList()
             val variableRefs = anaLinkDao.getVariableIdsForAnalysis(result.analysisId)
-            variableRefs.forEach { variableId ->
-                resultIdCounter += 1
-                resultEntities.add(
-                    AnalysisResultEntity(
-                        id = resultIdCounter,
-                        analysisId = analysisRequestId,
-                        variableRef = variableId,
-                        value = result.value,
-                        isRequired = null
-                    )
+            variableRefs.map { variableId ->
+                AnalysisResultEntity(
+                    id = 0,
+                    analysisId = analysisRequestId,
+                    variableRef = variableId,
+                    value = result.value,
+                    isRequired = null
                 )
             }
         }
-        analysisResultDao.insertAll(resultEntities)
+        val resultInsertedIds = analysisResultDao.insertAll(resultEntities)
 
-        // Get user ID from preferences
+        // Insert validations with auto-generated IDs
         val prefs = context.getSharedPreferences("LabBookPrefs", Context.MODE_PRIVATE)
         val userId = prefs.getInt("user_id", 0)
-
-        var validationIdCounter = (validationDao.getMaxId() ?: 0)
         val nowStr = now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-        val validationEntities = resultEntities.map {
-            validationIdCounter += 1
+
+        val validationEntities = resultInsertedIds.map { resultId ->
             AnalysisValidationEntity(
-                id = validationIdCounter,
-                resultId = it.id,
+                id = 0,
+                resultId = resultId.toInt(),
                 validationDate = nowStr,
                 userId = userId,
                 value = null,
-                validationType = 250,  // administrative validation
+                validationType = 250,
                 comment = null,
                 cancelReason = null
             )

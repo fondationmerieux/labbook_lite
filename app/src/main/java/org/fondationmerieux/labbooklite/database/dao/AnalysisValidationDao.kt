@@ -19,7 +19,10 @@ interface AnalysisValidationDao {
     suspend fun getById(id: Int): AnalysisValidationEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(validations: List<AnalysisValidationEntity>)
+    suspend fun insertAll(validations: List<AnalysisValidationEntity>): List<Long>
+
+    @Query("DELETE FROM analysis_validation")
+    suspend fun deleteAll()
 
     @Query("SELECT MAX(id) FROM analysis_validation")
     suspend fun getMaxId(): Int?

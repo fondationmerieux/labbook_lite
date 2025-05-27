@@ -184,7 +184,7 @@ fun RecordResultsScreen(recordId: Int, database: LabBookLiteDatabase, navControl
             }
 
             analysisStates[req.id] = state
-            Log.i("LabBookLite", "Analysis reqId=${req.id} → state=$state")
+            //Log.i("LabBookLite", "Analysis reqId=${req.id} → state=$state")
         }
     }
 
@@ -202,7 +202,7 @@ fun RecordResultsScreen(recordId: Int, database: LabBookLiteDatabase, navControl
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(scrollState)
-            .padding(16.dp)
+            .padding(horizontal = 8.dp, vertical = 8.dp)
     ) {
         val recordNumber = record!!.rec_num_lite?.takeLast(4)?.toIntOrNull() ?: record!!.id_data
 
@@ -284,7 +284,6 @@ fun RecordResultsScreen(recordId: Int, database: LabBookLiteDatabase, navControl
         }
 
         key(refreshKey) {
-            Log.i("LabBookLite", "Recomposition bloc analyse avec refreshKey=$refreshKey")
             filteredRequests.forEach { req ->
                 Log.i("LabBookLite", "Recomposition bloc analyse avec refreshKey=$refreshKey")
                 val analysis = analyses.find { it.id_data == req.analysisRef } ?: return@forEach
@@ -426,10 +425,12 @@ fun RecordResultsScreen(recordId: Int, database: LabBookLiteDatabase, navControl
                                                                     current == saved && saved.isNotBlank() -> "Valider"
                                                                     else -> "Enregistrer"
                                                                 }
+                                                                /*
                                                                 Log.i(
                                                                     "LabBookLite",
                                                                     "Dropdown click - resultId=$resultId, saved='$saved', current='$current', action=${buttonTexts[resultId]}"
                                                                 )
+                                                                */
                                                                 expanded = false
                                                             }
                                                         )
@@ -475,10 +476,12 @@ fun RecordResultsScreen(recordId: Int, database: LabBookLiteDatabase, navControl
 
                                                 buttonTexts[resultId] = action
 
+                                                /*
                                                 Log.i(
                                                     "LabBookLite",
                                                     "Bloc integer - ResultId: $resultId - Saved: '$saved' - NewInput: '$trimmedInput' => $action"
                                                 )
+                                                */
                                             },
                                             modifier = borderModifier,
                                             keyboardOptions = KeyboardOptions.Default.copy(
@@ -663,6 +666,7 @@ fun RecordResultsScreen(recordId: Int, database: LabBookLiteDatabase, navControl
                                                 )
                                                 refreshKey++
                                                 Toast.makeText(context, "Résultats enregistrés.", Toast.LENGTH_SHORT).show()
+                                                updateRecordStatusIfNeeded(database, record!!, analysisStates)
                                             }
                                         }
                                     }) {
@@ -768,6 +772,12 @@ fun RecordResultsScreen(recordId: Int, database: LabBookLiteDatabase, navControl
 
                                                 }
                                                 Toast.makeText(context, "Validation enregistrée.", Toast.LENGTH_SHORT).show()
+                                                updateRecordStatusIfNeeded(database, record!!, analysisStates)
+
+                                                record = withContext(Dispatchers.IO) {
+                                                    database.recordDao().getById(recordId)
+                                                }
+
                                                 recalculateAnalysisStates(
                                                     requests,
                                                     results,
@@ -830,15 +840,13 @@ fun RecordResultsScreen(recordId: Int, database: LabBookLiteDatabase, navControl
                                                 }
 
                                                 withContext(Dispatchers.Main) {
-                                                    results = updatedResults
-                                                    updatedResults.forEach {
-                                                        validationStatus[it.id] = false
-                                                        validationMap[it.id] = null
-                                                        savedResults[it.id] =
-                                                            it.value.orEmpty().trim()
+                                                    val resetResultIds = currentResultIdsMap[req.id] ?: emptyList()
+
+                                                    results = results.map { res ->
+                                                        if (resetResultIds.contains(res.id)) res.copy(value = "") else res
                                                     }
 
-                                                    currentResultIdsMap[req.id]?.forEach { resultId ->
+                                                    resetResultIds.forEach { resultId ->
                                                         resultInputs[resultId] = ""
                                                         validationStatus[resultId] = false
                                                         validationMap[resultId] = null
@@ -851,6 +859,12 @@ fun RecordResultsScreen(recordId: Int, database: LabBookLiteDatabase, navControl
                                                         "Résultats réinitialisés.",
                                                         Toast.LENGTH_SHORT
                                                     ).show()
+                                                    updateRecordStatusIfNeeded(database, record!!, analysisStates)
+
+                                                    record = withContext(Dispatchers.IO) {
+                                                        database.recordDao().getById(recordId)
+                                                    }
+
                                                     recalculateAnalysisStates(
                                                         requests,
                                                         results,
@@ -983,6 +997,7 @@ fun RecordResultsScreen(recordId: Int, database: LabBookLiteDatabase, navControl
                                                     )
                                                     refreshKey++
                                                     Toast.makeText(context, "Résultats annulés.", Toast.LENGTH_SHORT).show()
+                                                    updateRecordStatusIfNeeded(database, record!!, analysisStates)
                                                 }
                                             }
                                         }) {
@@ -1037,15 +1052,13 @@ fun RecordResultsScreen(recordId: Int, database: LabBookLiteDatabase, navControl
                                                 }
 
                                                 withContext(Dispatchers.Main) {
-                                                    results = updatedResults
-                                                    updatedResults.forEach {
-                                                        validationStatus[it.id] = false
-                                                        validationMap[it.id] = null
-                                                        savedResults[it.id] =
-                                                            it.value.orEmpty().trim()
+                                                    val resetResultIds = currentResultIdsMap[req.id] ?: emptyList()
+
+                                                    results = results.map { res ->
+                                                        if (resetResultIds.contains(res.id)) res.copy(value = "") else res
                                                     }
 
-                                                    currentResultIdsMap[req.id]?.forEach { resultId ->
+                                                    resetResultIds.forEach { resultId ->
                                                         resultInputs[resultId] = ""
                                                         validationStatus[resultId] = false
                                                         validationMap[resultId] = null
@@ -1089,37 +1102,87 @@ fun RecordResultsScreen(recordId: Int, database: LabBookLiteDatabase, navControl
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            val analysisStatesList = analysisStates.values.toList()
-            val hasValidated = analysisStatesList.any { it == "V" }
-            val hasCancelled = analysisStatesList.any { it == "C" }
-            val hasPending = analysisStatesList.any { it == "I" || it == "S" }
+            key(refreshKey) {
+                val analysisStatesList = analysisStates.values.toList()
+                val hasValidated = analysisStatesList.any { it == "V" }
+                val hasCancelled = analysisStatesList.any { it == "C" }
+                val hasPending = analysisStatesList.any { it == "I" || it == "S" }
 
-            val reportEnabled = (hasValidated || hasCancelled)
-            val reportLabel = when {
-                reportEnabled && !hasPending -> "Rapport complet"
-                reportEnabled && hasPending -> "Rapport partiel"
-                else -> "Rapport"
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                OutlinedButton(onClick = { navController.popBackStack() }) {
-                    Text("Retour")
+                val reportEnabled = (hasValidated || hasCancelled)
+                val reportLabel = when {
+                    reportEnabled && !hasPending -> "Rapport complet"
+                    reportEnabled && hasPending -> "Rapport partiel"
+                    else -> "Rapport"
                 }
 
-                Button(
-                    onClick = {
-                        val file = File(context.filesDir, "cr_${record!!.rec_num_lite ?: record!!.id_data}.pdf")
-                        generateReportHeaderPdf(context, file.name)
-                        Toast.makeText(context, "PDF généré", Toast.LENGTH_SHORT).show()
-                        val encodedPath = Uri.encode(file.path)
-                        navController.navigate("pdf_viewer/$encodedPath")
-                    },
-                    enabled = reportEnabled
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(reportLabel)
+                    OutlinedButton(onClick = { navController.popBackStack() }) {
+                        Text("Retour")
+                    }
+
+                    Button(
+                        onClick = {
+                            val baseFilename = "cr_${record!!.rec_num_lite ?: record!!.id_data}"
+                            val existingFiles = context.filesDir.listFiles { _, name ->
+                                name.startsWith(baseFilename)
+                            } ?: emptyArray()
+
+                            val nextIndex = if (existingFiles.isEmpty()) "" else "-${existingFiles.size}"
+                            val finalFilename = "$baseFilename$nextIndex.pdf"
+
+                            val file = File(context.filesDir, finalFilename)
+
+
+                            try {
+                                generateReportHeaderPdf(context, file.name, database, recordId)
+
+                                scope.launch {
+                                    withContext(Dispatchers.IO) {
+                                        database.recordDao().update(record!!.copy(status = 256))
+                                    }
+                                }
+
+                                Toast.makeText(context, "PDF généré", Toast.LENGTH_SHORT).show()
+                                navController.navigate("record_admin/${recordId}")
+                            } catch (e: Exception) {
+                                Log.e("LabBookLite", "Erreur lors de la génération du PDF", e)
+
+                                val drawable = GradientDrawable().apply {
+                                    setColor(AndroidColor.RED)
+                                    cornerRadius = 24f
+                                }
+
+                                val textView = TextView(context).apply {
+                                    text = "Erreur lors de la génération du PDF"
+                                    setBackground(drawable)
+                                    setTextColor(AndroidColor.WHITE)
+                                    textSize = 16f
+                                    setPadding(32, 16, 32, 16)
+                                    gravity = Gravity.CENTER
+                                    layoutParams = ViewGroup.LayoutParams(
+                                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                                        ViewGroup.LayoutParams.WRAP_CONTENT
+                                    )
+                                }
+
+                                val toast = Toast(context)
+                                toast.duration = Toast.LENGTH_LONG
+                                toast.view = textView
+                                toast.setGravity(
+                                    Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL,
+                                    0,
+                                    100
+                                )
+                                toast.show()
+                            }
+                        },
+                        enabled = reportEnabled && record!!.status != 256
+                    ) {
+                        Text(reportLabel)
+                    }
                 }
             }
         }
@@ -1182,7 +1245,7 @@ fun recalculateAnalysisStates(
         }
 
         analysisStates[req.id] = state
-        Log.i("LabBookLite", "Recalcul après action → reqId=${req.id} → state=$state")
+        //Log.i("LabBookLite", "Recalcul après action → reqId=${req.id} → state=$state")
     }
 }
 
@@ -1252,4 +1315,27 @@ private fun calculate(expr: String): Double {
 
 fun isResultCancelled(validation: AnalysisValidationEntity?): Boolean {
     return validation?.validationType == 252 && (validation.cancelReason != null || !validation.comment.isNullOrBlank())
+}
+
+suspend fun updateRecordStatusIfNeeded(
+    database: LabBookLiteDatabase,
+    record: RecordEntity,
+    analysisStates: Map<Int, String>
+) {
+    val currentStatus = record.status
+    val states = analysisStates.values
+
+    val newStatus = when {
+        currentStatus == 182 && states.any { it == "S" || it == "V" } -> 253
+        currentStatus == 253 && states.any { it == "V" } -> 255
+        currentStatus != 256 && states.all { it == "V" || it == "C" } -> 254
+        currentStatus in listOf(255, 256) && states.any { it != "I" } -> 255
+        states.all { it == "I" } -> 182
+        else -> null
+    }
+
+    if (newStatus != null && newStatus != currentStatus) {
+        val updated = record.copy(status = newStatus)
+        database.recordDao().update(updated)
+    }
 }

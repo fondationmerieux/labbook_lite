@@ -19,7 +19,10 @@ interface AnalysisResultDao {
     suspend fun getById(id: Int): AnalysisResultEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(results: List<AnalysisResultEntity>)
+    suspend fun insertAll(results: List<AnalysisResultEntity>): List<Long>
+
+    @Query("DELETE FROM analysis_result")
+    suspend fun deleteAll()
 
     @Query("SELECT MAX(id) FROM analysis_result")
     suspend fun getMaxId(): Int?
@@ -34,4 +37,7 @@ interface AnalysisResultDao {
 
     @Query("UPDATE analysis_result SET value = :value WHERE id = :id")
     suspend fun updateValue(id: Int, value: String)
+
+    @Query("DELETE FROM analysis_result WHERE id IN (SELECT id FROM analysis_request WHERE recordId = :recordId)")
+    fun deleteByRecord(recordId: Int)
 }

@@ -8,7 +8,7 @@ import androidx.room.PrimaryKey
  */
 @Entity(tableName = "analysis_result")
 data class AnalysisResultEntity(
-    @PrimaryKey val id: Int,              // identifiant du résultat (id_data)
+    @PrimaryKey(autoGenerate = true) val id: Int,              // identifiant du résultat (id_data)
     val analysisId: Int,                  // identifiant de la demande d’analyse (id de analysisRequest)
     val variableRef: Int,                 // identifiant de la variable (ref_variable)
     val value: String?,                   // valeur du résultat (valeur)

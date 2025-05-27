@@ -19,10 +19,10 @@ interface SampleDao {
     suspend fun getById(id: Int): SampleEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(entry: SampleEntity)
+    suspend fun insert(entry: SampleEntity): Long
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(entries: List<SampleEntity>)
+    suspend fun insertAll(entries: List<SampleEntity>): List<Long>
 
     @Query("DELETE FROM sample")
     suspend fun deleteAll()
@@ -32,4 +32,7 @@ interface SampleDao {
 
     @Query("SELECT COUNT(*) FROM sample")
     fun count(): Int
+
+    @Query("DELETE FROM sample WHERE record_id = :recordId")
+    fun deleteByRecord(recordId: Int)
 }

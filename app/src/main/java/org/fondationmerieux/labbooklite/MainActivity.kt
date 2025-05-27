@@ -37,7 +37,7 @@ class MainActivity : ComponentActivity() {
         //database.openHelper.writableDatabase.execSQL("PRAGMA wal_checkpoint(FULL)")
         //database.close()
 
-        Log.d("LabBookLite", "passwoard database = $dbPassword")
+        //Log.d("LabBookLite", "password database = $dbPassword")
 
         setContent {
             LabBookLiteTheme {
@@ -176,11 +176,6 @@ fun MainScreen(database: LabBookLiteDatabase) {
                     composable("about") {
                         AboutScreen()
                     }
-
-                    composable("pdf_viewer/{filePath}") { backStackEntry ->
-                        val pdfPath = Uri.decode(backStackEntry.arguments?.getString("filePath") ?: "")
-                        PdfViewerScreen(filePath = pdfPath, navController = navController)
-                    }
                 }
             }
         )
@@ -212,10 +207,24 @@ suspend fun isAppInitialized(database: LabBookLiteDatabase): Boolean {
         val dictOk = database.dictionaryDao().getAll().isNotEmpty()
         val prefsOk = database.preferencesDao().getAll().isNotEmpty()
         val natOk = database.nationalityDao().getAll().isNotEmpty()
-        val prescriberOk = database.prescriberDao().getAll().isNotEmpty()
+        //val prescriberOk = database.prescriberDao().getAll().isNotEmpty()
 
-        Log.d("LabBookLite", "user=$userOk, analysis=$analysisOk, link=$linkOk, var=$varOk, dict=$dictOk, prefs=$prefsOk, nat=$natOk, prescriber=$prescriberOk")
+        /*
+        val records = database.recordDao().getAll()
+        Log.i("LabBookLite", "==== RECORDS ====")
+        records.forEach {
+            Log.i("LabBookLite", it.toString())
+        }
 
-        userOk && analysisOk && linkOk && varOk && dictOk && prefsOk && natOk && prescriberOk
+        val patients = database.patientDao().getAll() //.filter { it.pat_code?.startsWith("LT") == true }
+        Log.i("LabBookLite", "==== ALL PATIENTS ====")
+        patients.forEach {
+            Log.i("LabBookLite", "id=${it.id_data}, code=${it.pat_code}, name=${it.pat_name}, firstname=${it.pat_firstname}")
+        }
+        */
+
+        Log.d("LabBookLite", "user=$userOk, analysis=$analysisOk, link=$linkOk, var=$varOk, dict=$dictOk, prefs=$prefsOk, nat=$natOk")
+
+        userOk && analysisOk && linkOk && varOk && dictOk && prefsOk && natOk
     }
 }

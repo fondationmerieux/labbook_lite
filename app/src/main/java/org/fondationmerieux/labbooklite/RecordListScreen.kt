@@ -2,25 +2,28 @@ package org.fondationmerieux.labbooklite
 
 import android.app.DatePickerDialog
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.runtime.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.fondationmerieux.labbooklite.database.entity.PatientEntity
-import org.fondationmerieux.labbooklite.database.entity.RecordEntity
 import org.fondationmerieux.labbooklite.database.model.RecordWithPatient
 import org.fondationmerieux.labbooklite.database.LabBookLiteDatabase
 import org.fondationmerieux.labbooklite.ui.viewmodel.RecordListViewModel
@@ -32,6 +35,16 @@ fun RecordListScreen(database: LabBookLiteDatabase, navController: NavController
     val factory = remember { RecordListViewModelFactory(database.recordDao()) }
     val viewModel: RecordListViewModel = viewModel(factory = factory)
     val recordList by viewModel.records.collectAsState()
+    val urgentPendingRecordIds by viewModel.urgentPendingRecordIds.collectAsState()
+
+    LaunchedEffect(recordList) {
+        Log.i("LabBookLite", "===== RECORDS FROM VIEWMODEL =====")
+        recordList.forEach { rw ->
+            val r = rw.record
+            val p = rw.patient
+            Log.i("LabBookLite", "Record ${r.id_data} (${r.rec_num_lite}) → patient_id=${r.patient_id} → ${p?.id_data} ${p?.pat_code} ${p?.pat_name}")
+        }
+    }
 
     var recordNumber by remember { mutableStateOf("") }
     var dateStart by remember { mutableStateOf("") }
@@ -51,14 +64,17 @@ fun RecordListScreen(database: LabBookLiteDatabase, navController: NavController
         }
 
         viewModel.loadRecords()
+        viewModel.loadUrgentPendingRecordIds(database)
 
         Log.i("LabBookLite", "===== TRACE DES DONNEES ENREGISTREES =====")
         withContext(Dispatchers.IO) {
+            /*
             val recordDao = database.recordDao()
             val sampleDao = database.sampleDao()
             val requestDao = database.analysisRequestDao()
             val resultDao = database.analysisResultDao()
             val validationDao = database.analysisValidationDao()
+
 
             val records = recordDao.getAll()
             val samples = sampleDao.getAll()
@@ -66,7 +82,7 @@ fun RecordListScreen(database: LabBookLiteDatabase, navController: NavController
             val results = resultDao.getAll()
             val validations = validationDao.getAll()
 
-            /*
+
             Log.i("LabBookLite", "=== RECORDS ===")
             records.forEach { Log.i("LabBookLite", it.toString()) }
 
@@ -172,20 +188,34 @@ fun RecordListScreen(database: LabBookLiteDatabase, navController: NavController
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        RecordTable(records = filteredRecords, navController = navController)
+        RecordTable(
+            records = filteredRecords,
+            database = database,
+            navController = navController,
+            urgentPendingRecordIds = urgentPendingRecordIds
+        )
     }
 }
 
 @Composable
-fun RecordRow(record: RecordWithPatient, navController: NavController) {
+fun RecordRow(record: RecordWithPatient, database: LabBookLiteDatabase, navController: NavController, urgentPendingRecordIds: Set<Int>) {
     Surface(
         tonalElevation = 2.dp,
         shape = RoundedCornerShape(8.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(
+                width = 2.dp,
+                color = if (urgentPendingRecordIds.contains(record.record.id_data)) Color.Red else Color.Transparent,
+                shape = RoundedCornerShape(8.dp)
+            )
+    )
+    {
         Column(modifier = Modifier.padding(12.dp)) {
             val r = record.record
             val p = record.patient
+            val context = LocalContext.current
+            val viewModel: RecordListViewModel = viewModel()
 
             val recordNumber = r.rec_num_lite?.takeLast(4)?.toIntOrNull()?.toString() ?: r.id_data.toString()
             val statusLabel = when (r.status) {
@@ -259,8 +289,43 @@ fun RecordRow(record: RecordWithPatient, navController: NavController) {
                     Text("Résultats")
                 }
 
-                TextButton(onClick = { /* TODO: Supprimer */ }) {
-                    Text("Supprimer")
+                var showDialog by remember { mutableStateOf(false) }
+
+                IconButton(onClick = { showDialog = true }) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Supprimer",
+                        tint = Color.Red
+                    )
+                }
+
+                if (showDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showDialog = false },
+                        title = { Text("Delete confirmation") },
+                        text = { Text("Are you sure you want to delete this record? This action cannot be undone.") },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                showDialog = false
+                                viewModel.deleteRecordWithDetails(
+                                    recordId = record.record.id_data,
+                                    database = database, // make sure `database` is passed down to RecordRow
+                                    context = context,
+                                    onSuccess = { viewModel.loadRecords() },
+                                    onError = { msg ->
+                                        Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                                    }
+                                )
+                            }) {
+                                Text("Yes", color = Color.Red)
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showDialog = false }) {
+                                Text("Cancel")
+                            }
+                        }
+                    )
                 }
             }
         }
@@ -268,10 +333,13 @@ fun RecordRow(record: RecordWithPatient, navController: NavController) {
 }
 
 @Composable
-fun RecordTable(records: List<RecordWithPatient>, navController: NavController) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        records.forEach { record ->
-            RecordRow(record = record, navController = navController)
+fun RecordTable(records: List<RecordWithPatient>, database: LabBookLiteDatabase, navController: NavController, urgentPendingRecordIds: Set<Int>) {
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxSize()
+    ) {
+        items(records) { record ->
+            RecordRow(record = record, database = database, navController = navController, urgentPendingRecordIds = urgentPendingRecordIds)
         }
     }
 }

@@ -9,7 +9,7 @@ import java.util.Date
  */
 @Entity(tableName = "sample")
 data class SampleEntity(
-    @PrimaryKey val id_data: Int,
+    @PrimaryKey(autoGenerate = true) val id_data: Int,
     val samp_date: Date?,
     val sample_type: Int?,
     val status: Int?,

@@ -18,6 +18,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.core.content.edit
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,6 +30,7 @@ fun AppTopBar(navController: NavController, showMenu: Boolean = true) {
     val lastname = prefs.getString("lastname", null)
     val username = prefs.getString("username", "") ?: ""
     val role = prefs.getString("role_type", "") ?: ""
+    val isLoggedIn = prefs.getBoolean("logged_in", false)
 
     val userLabel = if (!lastname.isNullOrEmpty() || !firstname.isNullOrEmpty()) {
         listOfNotNull(lastname, firstname).joinToString(" ")
@@ -129,23 +131,25 @@ fun AppTopBar(navController: NavController, showMenu: Boolean = true) {
 
                     HorizontalDivider()
 
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.d_connexion)) },
-                        onClick = {
-                            menuExpanded.value = false
-                            with(prefs.edit()) {
-                                remove("username")
-                                remove("pat_id")
-                                remove("firstname")
-                                remove("lastname")
-                                remove("role_type")
-                                apply()
+                    if (isLoggedIn) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.deconnexion)) },
+                            onClick = {
+                                menuExpanded.value = false
+                                prefs.edit {
+                                    remove("username")
+                                    remove("pat_id")
+                                    remove("firstname")
+                                    remove("lastname")
+                                    remove("role_type")
+                                    putBoolean("logged_in", false)
+                                }
+                                navController.navigate("login") {
+                                    popUpTo(0) { inclusive = true }
+                                }
                             }
-                            navController.navigate("login") {
-                                popUpTo(0) { inclusive = true }
-                            }
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }

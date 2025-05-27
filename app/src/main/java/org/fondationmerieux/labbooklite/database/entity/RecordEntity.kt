@@ -8,7 +8,7 @@ import androidx.room.PrimaryKey
  */
 @Entity(tableName = "record")
 data class RecordEntity(
-    @PrimaryKey val id_data: Int,        // identifiant du dossier
+    @PrimaryKey(autoGenerate = true) val id_data: Int,        // identifiant du dossier
     val patient_id: Int?,                // patient lié
     val type: Int?,                      // type de dossier
     val rec_date_receipt: String?,       // date de réception

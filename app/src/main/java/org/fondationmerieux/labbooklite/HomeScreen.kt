@@ -1,6 +1,7 @@
 package org.fondationmerieux.labbooklite
 
 import android.content.Context
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -35,10 +36,26 @@ fun HomeScreen(navController: NavController) {
     val db = LabBookLiteDatabase.getDatabase(context, dbPassword)
 
     var lastRecord by remember { mutableStateOf<RecordEntity?>(null) }
+    var urgentPendingCount by remember { mutableStateOf(0) }
+
+    val isLoggedIn = prefs.getBoolean("logged_in", false)
 
     LaunchedEffect(Unit) {
-        withContext(Dispatchers.IO) {
-            lastRecord = db.recordDao().getLastRecord()
+        Log.i("LabBookLite", "HomeScreen → logged_in = $isLoggedIn")
+
+        val hasUsers = withContext(Dispatchers.IO) {
+            val users = db.userDao().getAll()
+            Log.i("LabBookLite", "HomeScreen → userDao().getAll() size = ${users.size}")
+            users.isNotEmpty()
+        }
+
+        Log.i("LabBookLite", "HomeScreen → hasUsers = $hasUsers")
+
+
+        if (!isLoggedIn || !hasUsers) {
+            navController.navigate("settings") {
+                popUpTo("home") { inclusive = true }
+            }
         }
     }
 
@@ -80,6 +97,23 @@ fun HomeScreen(navController: NavController) {
 
                         Text(
                             text = "Date de création : $recordDate",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
+                if (urgentPendingCount > 0) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFFD32F2F), RoundedCornerShape(8.dp))
+                            .padding(12.dp)
+                    ) {
+                        Text(
+                            text = "$urgentPendingCount dossier(s) avec analyse(s) urgente(s) non validée(s)",
+                            color = Color.White,
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }

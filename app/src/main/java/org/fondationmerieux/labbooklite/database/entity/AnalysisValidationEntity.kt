@@ -8,7 +8,7 @@ import androidx.room.PrimaryKey
  */
 @Entity(tableName = "analysis_validation")
 data class AnalysisValidationEntity(
-    @PrimaryKey val id: Int,                 // identifiant de la validation (id_data)
+    @PrimaryKey(autoGenerate = true) val id: Int,                 // identifiant de la validation (id_data)
     val resultId: Int?,                      // identifiant du résultat validé (id_resultat)
     val validationDate: String?,             // date de validation (date_validation)
     val userId: Int,                         // identifiant de l'utilisateur (utilisateur)

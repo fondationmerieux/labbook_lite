@@ -8,7 +8,7 @@ import androidx.room.PrimaryKey
  */
 @Entity(tableName = "analysis_request") // sigl_04_data in LabBook database
 data class AnalysisRequestEntity(
-    @PrimaryKey val id: Int,                 // identifiant de la demande (id_data)
+    @PrimaryKey(autoGenerate = true) val id: Int,                 // identifiant de la demande (id_data)
     val recordId: Int?,                      // identifiant du dossier (id_dos)
     val analysisRef: Int?,                   // référence de l’analyse (ref_analyse)
     val isUrgent: Int?,                      // marqueur d’urgence (urgent)

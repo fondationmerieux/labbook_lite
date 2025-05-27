@@ -22,6 +22,7 @@ object KeystoreHelper {
      * @param context The application context.
      */
     fun getOrCreatePassword(context: Context): String {
+        try {
         val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
 
         val sharedPreferences = EncryptedSharedPreferences.create(
@@ -39,8 +40,27 @@ object KeystoreHelper {
             password = generateSecurePassword()
             sharedPreferences.edit() { putString(KEY_PASSWORD, password) }
         }
+            return password
 
-        return password
+    } catch (e: Exception) {
+            // Log.e("KeystoreHelper", "Keyset error, resetting: ${e.message}")
+            context.deleteSharedPreferences(PREFS_NAME)
+
+            // Retry once after cleanup
+            val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
+            val sharedPreferences = EncryptedSharedPreferences.create(
+                PREFS_NAME,
+                masterKeyAlias,
+                context,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            )
+
+            val password = generateSecurePassword()
+            sharedPreferences.edit { putString(KEY_PASSWORD, password) }
+
+            return password
+        }
     }
 
     /**
