@@ -137,8 +137,9 @@ fun generateReportHeaderPdf(context: Context, filename: String, database: LabBoo
         }
 
         val hasAnyValidation = resultIds.any { id ->
-            validations.find { it.resultId == id }?.validationType == 252
+            validations.find { it.resultId == id && it.validationType == 252 && it.cancelReason == null && it.comment.isNullOrBlank() } != null
         }
+
         val hasCancel = resultIds.any { id ->
             val v = validations.find { it.resultId == id }
             v?.validationType == 252 && (v.cancelReason != null || !v.comment.isNullOrBlank())
@@ -163,7 +164,7 @@ fun generateReportHeaderPdf(context: Context, filename: String, database: LabBoo
 
         val state = when {
             hasCancel -> "C"
-            hasAnyValidation -> "V"
+            hasAnyValidation && requiredFilled -> "V"
             requiredFilled || (requiredVarIds.isEmpty() && anyValueFilled) -> "S"
             allEmpty -> "I"
             else -> "I"

@@ -170,11 +170,11 @@ fun MainScreen(database: LabBookLiteDatabase) {
                     }
 
                     composable("general") {
-                        GeneralScreen(database = database)
+                        GeneralScreen(database = database, navController = navController)
                     }
 
                     composable("about") {
-                        AboutScreen()
+                        AboutScreen(navController = navController)
                     }
                 }
             }

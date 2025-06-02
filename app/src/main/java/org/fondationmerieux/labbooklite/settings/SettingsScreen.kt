@@ -165,36 +165,45 @@ fun SettingsScreen(navController: NavController) {
                     TextButton(onClick = {
                         confirmFetchDialog = false
                         isLoading = true
-                        val fullUrl = "${serverUrl.trim().removeSuffix("/")}/services/lite/setup/load"
-                        val cleanLogin = deviceId.trim()
-                        val cleanPwd = password.trim()
-                        val database = LabBookLiteDatabase.getDatabase(context, dbPassword)
 
-                        // 1. clean database and PDF reports
-                        database.clearAllTables()
+                        scope.launch {
+                            withContext(Dispatchers.IO) {
+                                val database = LabBookLiteDatabase.getDatabase(context, dbPassword)
 
-                        context.filesDir.listFiles()?.forEach { file ->
-                            if (file.name.startsWith("cr_") && file.name.endsWith(".pdf")) {
-                                file.delete()
+                                // 1. clean database
+                                database.clearAllTables()
+
+                                // 2. clean PDF reports
+                                context.filesDir.listFiles()?.forEach { file ->
+                                    if (file.name.startsWith("cr_") && file.name.endsWith(".pdf")) {
+                                        file.delete()
+                                    }
+                                }
                             }
+
+                            val fullUrl =
+                                "${serverUrl.trim().removeSuffix("/")}/services/lite/setup/load"
+                            val cleanLogin = deviceId.trim()
+                            val cleanPwd = password.trim()
+                            val database = LabBookLiteDatabase.getDatabase(context, dbPassword)
+
+                            fetchConfigurationPost(
+                                login = cleanLogin,
+                                pwd = cleanPwd,
+                                context = context,
+                                database = database,
+                                navController = navController,
+                                url = fullUrl,
+                                onError = {
+                                    isLoading = false
+                                    showErrorDialog = true
+                                    errorMessage = it
+                                },
+                                onSuccess = {
+                                    isLoading = false
+                                }
+                            )
                         }
-
-                        fetchConfigurationPost(
-                            login = cleanLogin,
-                            pwd = cleanPwd,
-                            context = context,
-                            database = database,
-                            navController = navController,
-                            url = fullUrl,
-                            onError = {
-                                isLoading = false
-                                showErrorDialog = true
-                                errorMessage = it
-                            },
-                            onSuccess = {
-                                isLoading = false
-                            }
-                        )
                     }) {
                         Text("Oui")
                     }
@@ -648,7 +657,7 @@ suspend fun uploadAllDataToServer(
                 }
 
                 // 3. Clear only session-related preferences, keep server URL and deviceId
-                val prefs = context.getSharedPreferences("labbook_prefs", Context.MODE_PRIVATE)
+                val prefs = context.getSharedPreferences("LabBookPrefs", Context.MODE_PRIVATE)
 
                 prefs.edit().apply {
                     clear()

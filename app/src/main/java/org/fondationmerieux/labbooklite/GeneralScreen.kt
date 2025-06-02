@@ -10,15 +10,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.fondationmerieux.labbooklite.database.LabBookLiteDatabase
+import androidx.compose.material3.OutlinedButton
 
 /**
  * Created by AlC on 19/04/2025.
  */
 @Composable
-fun GeneralScreen(database: LabBookLiteDatabase) {
+fun GeneralScreen(database: LabBookLiteDatabase, navController: NavController) {
     val context = LocalContext.current
 
     var patientCount by remember { mutableStateOf(0) }
@@ -74,5 +76,20 @@ fun GeneralScreen(database: LabBookLiteDatabase) {
             }
         }
         Text("Date de création : ${lastRecordDate ?: "N/A"}")
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.Start
+        ) {
+            OutlinedButton(onClick = {
+                navController.popBackStack()
+            }) {
+                Text("Retour")
+            }
+        }
     }
 }

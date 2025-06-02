@@ -28,6 +28,8 @@ import org.fondationmerieux.labbooklite.database.model.RecordWithPatient
 import org.fondationmerieux.labbooklite.database.LabBookLiteDatabase
 import org.fondationmerieux.labbooklite.ui.viewmodel.RecordListViewModel
 import org.fondationmerieux.labbooklite.ui.viewmodel.RecordListViewModelFactory
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import java.util.Calendar
 
 @Composable
@@ -132,8 +134,33 @@ fun RecordListScreen(database: LabBookLiteDatabase, navController: NavController
         }
 
         val matchNumber = recordNumber.isEmpty() || r.rec_num_lite?.contains(recordNumber, ignoreCase = true) == true
-        val matchDateStart = dateStart.isEmpty() || (r.rec_date_receipt ?: "") >= dateStart
-        val matchDateEnd = dateEnd.isEmpty() || (r.rec_date_receipt ?: "") <= dateEnd
+
+        val inputFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+        val isoFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+
+        val recordDate = try {
+            r.rec_date_receipt?.let { LocalDate.parse(it, inputFormatter) }
+        } catch (e: Exception) {
+            Log.w("LabBookLite", "Impossible de parser la date '${r.rec_date_receipt}'")
+            null
+        }
+
+        val startDate = try {
+            if (dateStart.isNotBlank()) LocalDate.parse(dateStart, isoFormatter) else null
+        } catch (e: Exception) {
+            Log.w("LabBookLite", "Date de début invalide : '$dateStart'")
+            null
+        }
+
+        val endDate = try {
+            if (dateEnd.isNotBlank()) LocalDate.parse(dateEnd, isoFormatter) else null
+        } catch (e: Exception) {
+            Log.w("LabBookLite", "Date de fin invalide : '$dateEnd'")
+            null
+        }
+
+        val matchDateStart = startDate == null || (recordDate != null && !recordDate.isBefore(startDate))
+        val matchDateEnd = endDate == null || (recordDate != null && !recordDate.isAfter(endDate))
 
         matchPatient && matchNumber && matchDateStart && matchDateEnd
     }

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,9 +20,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import androidx.navigation.NavController
 
 @Composable
-fun AboutScreen() {
+fun AboutScreen(navController: NavController) {
     val context = LocalContext.current
     val appVersion = remember {
         try {
@@ -32,31 +34,32 @@ fun AboutScreen() {
     }
 
     val annotatedText = buildAnnotatedString {
-        append("Cette application a été développée dans le cadre d’un partenariat entre :\n\n")
+        append("Cette application a été développée suite au partenariat entre :\n\n")
 
-        append("- L’Unité d’Appui à la Gestion et à la Coordination des Programmes (UAGCP) du Ministère de la Santé et de l’Hygiène Publique, République de Guinée\n")
-        append("- ")
+        append("• La Direction Nationale des laboratoires du Ministère de la Santé et de l’Hygiène Publique, République de Guinée\n")
+        append("• L’Unité d’Appui à la Gestion et à la Coordination des Programmes (UAGCP) du Ministère de la Santé et de l’Hygiène Publique, République de Guinée\n")
+        append("• Le Fonds mondial de lutte contre le sida, la tuberculose et le paludisme\n")
+        append("• ")
 
         pushStringAnnotation(tag = "URL", annotation = "https://www.fondation-merieux.org/")
         withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, textDecoration = TextDecoration.Underline)) {
-            append("Fondation Mérieux")
+            append("La Fondation Mérieux")
         }
         pop()
-        append("\n\n")
 
-        append("LabBook Lite permet d’étendre l’usage de LabBook (")
+        append("\n\nLabBook Lite permet d'étendre l'usage de LabBook (")
         pushStringAnnotation(tag = "URL", annotation = "https://www.lab-book.org/")
         withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, textDecoration = TextDecoration.Underline)) {
             append("https://www.lab-book.org/")
         }
         pop()
-        append(") dans les laboratoires jusqu’aux agents communautaires sur le terrain.\n")
-        append("Il s’agit d’une application Android, pour mobile et tablette, fonctionnant sans connexion internet.\n\n")
+        append(") dans le laboratoire aux agents communautaires sur le terrain.\n")
+        append("Il s'agit d'une application Android pour mobile et tablette qui fonctionne sans connexion internet.\n\n")
 
-        append("LabBook Lite offre la possibilité de collecter les données des patients, de saisir et de valider les résultats des analyses, puis d’imprimer les comptes rendus.\n")
-        append("Une fois l’utilisateur de LabBook Lite de retour au laboratoire, l’application peut être utilisée pour transférer les données vers le serveur LabBook.\n\n")
+        append("LabBook Lite offre la possibilité de collecter des données des patients, de saisir les résultats des analyses, de les valider et donc d'imprimer les comptes-rendus.\n")
+        append("Une fois l'utilisateur de LabBook Lite de retour au laboratoire, l'application peut être utilisée pour transférer les données vers le serveur LabBook.\n\n")
 
-        append("LabBook Lite est une application développée par ")
+        append("LabBook Lite a été développé par ")
         pushStringAnnotation(tag = "URL", annotation = "https://www.aegle.fr/")
         withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, textDecoration = TextDecoration.Underline)) {
             append("AEGLE")
@@ -97,10 +100,24 @@ fun AboutScreen() {
 
         Spacer(modifier = Modifier.weight(1f))
 
-        Text(
-            text = "Version $appVersion",
-            modifier = Modifier.padding(bottom = 16.dp),
-            style = MaterialTheme.typography.labelSmall
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedButton(onClick = {
+               navController.popBackStack()
+            }) {
+                Text("Retour")
+            }
+
+            Text(
+                text = "Version $appVersion",
+                style = MaterialTheme.typography.labelSmall
+            )
+        }
+
     }
 }
