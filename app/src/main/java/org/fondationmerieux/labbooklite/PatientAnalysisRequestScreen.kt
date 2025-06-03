@@ -354,9 +354,10 @@ fun PatientAnalysisRequestScreen(
                 onDismissRequest = { expanded = false },
                 modifier = Modifier
                     .fillMaxWidth()
+                    .heightIn(max = 300.dp) // ou 400.dp selon ton écran
                     .padding(horizontal = 8.dp)
             ) {
-                filteredAnalysis.take(5).forEach { analysis ->
+                filteredAnalysis.forEach { analysis ->
                     DropdownMenuItem(
                         text = {
                             Column {

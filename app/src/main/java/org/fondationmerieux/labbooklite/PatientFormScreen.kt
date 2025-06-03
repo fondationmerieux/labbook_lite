@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -152,6 +154,20 @@ fun PatientFormScreen(database: LabBookLiteDatabase, navController: NavControlle
                 generatedCode.value = code
             }
         }
+    }
+
+    fun showDatePicker(context: Context, onDateSelected: (LocalDate) -> Unit) {
+        val today = LocalDate.now()
+        val dialog = android.app.DatePickerDialog(
+            context,
+            { _, year, month, dayOfMonth ->
+                onDateSelected(LocalDate.of(year, month + 1, dayOfMonth))
+            },
+            today.year,
+            today.monthValue - 1,
+            today.dayOfMonth
+        )
+        dialog.show()
     }
 
     Scaffold(
@@ -311,7 +327,7 @@ fun PatientFormScreen(database: LabBookLiteDatabase, navController: NavControlle
             OutlinedTextField(
                 nom,
                 { nom = it },
-                label = { Text(stringResource(R.string.nom)) },
+                label = { Text("${stringResource(R.string.nom)} *")},
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !isAnonymous
             )
@@ -360,7 +376,7 @@ fun PatientFormScreen(database: LabBookLiteDatabase, navController: NavControlle
                     value = sexOptions.find { it.id_data == selectedSexId }?.label ?: "",
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text(stringResource(R.string.sexe)) },
+                    label = { Text("${stringResource(R.string.sexe)} *") },
                     placeholder = { Text(stringResource(R.string.sexe)) },
                     modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
                 )
@@ -380,79 +396,41 @@ fun PatientFormScreen(database: LabBookLiteDatabase, navController: NavControlle
                 }
             }
 
-            val dateFormatter = DateTimeFormatter.ofPattern("uuuu-MM-dd")
-                .withResolverStyle(java.time.format.ResolverStyle.STRICT)
-
             OutlinedTextField(
                 value = birthField,
-                onValueChange = { input ->
-                    val rawDigits = input.text.filter { it.isDigit() }.take(8)
-                    val oldText = birthField.text
-                    val formatted = buildString {
-                        for (i in rawDigits.indices) {
-                            append(rawDigits[i])
-                            if (i == 3 || i == 5) append('-')
-                        }
-                    }
-                    val newCursor = when {
-                        input.text.length < oldText.length -> input.selection.end
-                        input.selection.end >= formatted.length -> formatted.length
-                        else -> {
-                            val offset = formatted.length - rawDigits.length
-                            (input.selection.end + offset).coerceAtMost(formatted.length)
-                        }
-                    }
-                    birthField = TextFieldValue(text = formatted, selection = TextRange(newCursor))
-
-                    if (rawDigits.length == 8) {
-                        try {
-                            val parsedDate = LocalDate.parse(formatted, dateFormatter)
+                onValueChange = {},
+                readOnly = true,
+                label = { Text(stringResource(R.string.date_de_naissance_yyyy_mm_dd)) },
+                trailingIcon = {
+                    IconButton(onClick = {
+                        showDatePicker(context) { date ->
+                            val formatted = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                            birthField = TextFieldValue(formatted)
                             isBirthValid = true
+
                             val today = LocalDate.now()
-                            val period = Period.between(parsedDate, today)
+                            val period = Period.between(date, today)
+
                             when {
                                 period.years >= 1 -> {
                                     age = period.years.toString()
-                                    ageUnit = ageUnits.firstOrNull {
-                                        it.label?.contains(
-                                            "an",
-                                            ignoreCase = true
-                                        ) == true
-                                    }?.id_data
+                                    ageUnit = ageUnits.firstOrNull { it.label?.contains("an", ignoreCase = true) == true }?.id_data
                                 }
-
                                 period.months >= 1 -> {
                                     age = period.months.toString()
-                                    ageUnit = ageUnits.firstOrNull {
-                                        it.label?.contains(
-                                            "mois",
-                                            ignoreCase = true
-                                        ) == true
-                                    }?.id_data
+                                    ageUnit = ageUnits.firstOrNull { it.label?.contains("mois", ignoreCase = true) == true }?.id_data
                                 }
-
                                 else -> {
-                                    val days = ChronoUnit.DAYS.between(parsedDate, today).toInt()
+                                    val days = ChronoUnit.DAYS.between(date, today).toInt()
                                     age = days.toString()
-                                    ageUnit = ageUnits.firstOrNull {
-                                        it.label?.contains(
-                                            "jour",
-                                            ignoreCase = true
-                                        ) == true
-                                    }?.id_data
+                                    ageUnit = ageUnits.firstOrNull { it.label?.contains("jour", ignoreCase = true) == true }?.id_data
                                 }
                             }
-                        } catch (e: DateTimeParseException) {
-                            isBirthValid = false
-                            age = ""
-                            Log.w("PatientForm", "Invalid date: $formatted (${e.message})")
                         }
-                    } else {
-                        isBirthValid = true
-                        age = ""
+                    }) {
+                        Icon(Icons.Default.CalendarToday, contentDescription = "Select date")
                     }
                 },
-                label = { Text(stringResource(R.string.date_de_naissance_yyyy_mm_dd)) },
                 isError = !isBirthValid,
                 supportingText = {
                     if (!isBirthValid) {
@@ -462,8 +440,7 @@ fun PatientFormScreen(database: LabBookLiteDatabase, navController: NavControlle
                         )
                     }
                 },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
+                modifier = Modifier.fillMaxWidth()
             )
 
             Row(
@@ -490,10 +467,10 @@ fun PatientFormScreen(database: LabBookLiteDatabase, navController: NavControlle
             ) {
                 OutlinedTextField(
                     value = age,
-                    onValueChange = {},
-                    label = { Text(stringResource(R.string.age)) },
+                    onValueChange = { age = it },
+                    label = { Text("${stringResource(R.string.age)} *")},
                     modifier = Modifier.weight(1f),
-                    readOnly = true
+                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
                 )
                 ExposedDropdownMenuBox(
                     expanded = ageUnitExpanded,

@@ -26,11 +26,19 @@ fun AppTopBar(navController: NavController, showMenu: Boolean = true) {
     val context = LocalContext.current
     val prefs = context.getSharedPreferences("LabBookPrefs", Context.MODE_PRIVATE)
 
-    val firstname = prefs.getString("firstname", null)
-    val lastname = prefs.getString("lastname", null)
-    val username = prefs.getString("username", "") ?: ""
-    val role = prefs.getString("role_type", "") ?: ""
-    val isLoggedIn = prefs.getBoolean("logged_in", false)
+    var firstname by remember { mutableStateOf<String?>(null) }
+    var lastname by remember { mutableStateOf<String?>(null) }
+    var username by remember { mutableStateOf("") }
+    var role by remember { mutableStateOf("") }
+    var isLoggedIn by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        firstname = prefs.getString("firstname", null)
+        lastname = prefs.getString("lastname", null)
+        username = prefs.getString("username", "") ?: ""
+        role = prefs.getString("role_type", "") ?: ""
+        isLoggedIn = prefs.getBoolean("logged_in", false)
+    }
 
     val userLabel = if (!lastname.isNullOrEmpty() || !firstname.isNullOrEmpty()) {
         listOfNotNull(lastname, firstname).joinToString(" ")

@@ -160,7 +160,7 @@ fun SettingsScreen(navController: NavController) {
             AlertDialog(
                 onDismissRequest = { confirmFetchDialog = false },
                 title = { Text("Confirmer") },
-                text = { Text("Cette opération va écraser les données locales actuelles. Voulez-vous continuer ?") },
+                text = { Text("Cette opération va écraser toutes les données locales actuelles. Voulez-vous continuer ?") },
                 confirmButton = {
                     TextButton(onClick = {
                         confirmFetchDialog = false
@@ -231,29 +231,6 @@ fun SettingsScreen(navController: NavController) {
             Spacer(Modifier.width(8.dp))
             Text("Importer une configuration JSON (DEBUG)", fontWeight = FontWeight.Bold)
         }
-
-        Button(
-            onClick = {
-                val sharedPreferences = context.getSharedPreferences("LabBookPrefs", Context.MODE_PRIVATE)
-                sharedPreferences.edit {
-                    putBoolean("logged_in", false)
-                }
-
-                context.deleteDatabase("labbooklite_encrypted.db")
-                Toast.makeText(context, "Database deleted", Toast.LENGTH_SHORT).show()
-
-                LabBookLiteDatabase.recreate(context, dbPassword)
-            },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF00796B),
-                contentColor = Color.White
-            )
-        ) {
-            Icon(Icons.Default.BugReport, contentDescription = "Reset database", tint = Color.White)
-            Spacer(Modifier.width(8.dp))
-            Text("Réinitialiser la base de données (DEBUG)", fontWeight = FontWeight.Bold)
-        }
         */
 
         val currentStatus = uploadStatus.value
@@ -270,7 +247,7 @@ fun SettingsScreen(navController: NavController) {
             AlertDialog(
                 onDismissRequest = { confirmUploadDialog = false },
                 title = { Text("Confirmer") },
-                text = { Text("Les données vont être transférées, puis effacées localement. Voulez-vous continuer ?") },
+                text = { Text("Les nouvelles données vont être transférées, puis effacées localement. Voulez-vous continuer ?") },
                 confirmButton = {
                     TextButton(onClick = {
                         confirmUploadDialog = false
@@ -315,7 +292,6 @@ fun SettingsScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(text = status, color = Color.DarkGray)
         }
-
     }
 }
 
@@ -646,31 +622,17 @@ suspend fun uploadAllDataToServer(
             val success = response.isSuccessful
 
             if (success) {
-                // 1. Clear all database tables
-                db.clearAllTables()
+                // 1. Clear some tables
+                db.recordDao().deleteAll()
+                db.analysisRequestDao().deleteAll()
+                db.analysisResultDao().deleteAll()
+                db.analysisValidationDao().deleteAll()
+                db.sampleDao().deleteAll()
 
                 // 2. Delete all report PDFs
                 context.filesDir.listFiles()?.forEach { file ->
                     if (file.name.startsWith("cr_") && file.name.endsWith(".pdf")) {
                         file.delete()
-                    }
-                }
-
-                // 3. Clear only session-related preferences, keep server URL and deviceId
-                val prefs = context.getSharedPreferences("LabBookPrefs", Context.MODE_PRIVATE)
-
-                prefs.edit().apply {
-                    clear()
-                    putString("server_url", serverUrl)
-                    putString("device_id", deviceId)
-                    putBoolean("logged_in", false)
-                    apply()
-                }
-
-                // 4. Redirect to settings screen
-                withContext(Dispatchers.Main) {
-                    navController.navigate("settings") {
-                        popUpTo(0) { inclusive = true }
                     }
                 }
             }
