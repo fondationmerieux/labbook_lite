@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.0.3] - 2025-06-25
+### Changed
+- labels of partial report and full report become partial and full validation
+
 ## [1.0.2] - 2025-06-03
 ### Added
 - README and LICENSE md files

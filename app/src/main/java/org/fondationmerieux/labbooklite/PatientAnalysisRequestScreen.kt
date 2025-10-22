@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -52,6 +53,7 @@ fun PatientAnalysisRequestScreen(
     val locale = Locale.getDefault()
     val context = LocalContext.current
     val scrollState = rememberScrollState()
+    val focusManager = LocalFocusManager.current
 
     /*
     analyses.forEach {
@@ -87,6 +89,7 @@ fun PatientAnalysisRequestScreen(
     val viewModel: PatientRequestViewModel = viewModel(
         factory = PatientRequestViewModelFactory(application, database)
     )
+    val scope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
@@ -775,15 +778,13 @@ fun PatientAnalysisRequestScreen(
                             // Status
                             val statusOptions =
                                 dictionaries.filter { it.dico_name == "prel_statut" }
-                            var statusExpanded by remember { mutableStateOf(false) }
                             val currentStatusId = product.status
-                            val currentStatusLabel =
-                                statusOptions.firstOrNull { it.id_data == currentStatusId }?.label
-                                    ?: ""
+                            val currentStatusLabel = statusOptions
+                                .firstOrNull { it.id_data == currentStatusId }?.label.orEmpty()
 
                             ExposedDropdownMenuBox(
-                                expanded = statusExpanded,
-                                onExpandedChange = { statusExpanded = it }
+                                expanded = product.isStatusMenuExpanded.value,
+                                onExpandedChange = { product.isStatusMenuExpanded.value = it }
                             ) {
                                 OutlinedTextField(
                                     value = currentStatusLabel,
@@ -793,15 +794,15 @@ fun PatientAnalysisRequestScreen(
                                     modifier = Modifier.menuAnchor().fillMaxWidth()
                                 )
                                 ExposedDropdownMenu(
-                                    expanded = statusExpanded,
-                                    onDismissRequest = { statusExpanded = false }
+                                    expanded = product.isStatusMenuExpanded.value,
+                                    onDismissRequest = { product.isStatusMenuExpanded.value = false }
                                 ) {
                                     statusOptions.forEach { option ->
                                         DropdownMenuItem(
                                             text = { Text(option.label.orEmpty()) },
                                             onClick = {
                                                 product.status = option.id_data
-                                                statusExpanded = false
+                                                product.isStatusMenuExpanded.value = false
                                             }
                                         )
                                     }
@@ -839,6 +840,8 @@ fun PatientAnalysisRequestScreen(
 
             Button(
                 onClick = {
+                    focusManager.clearFocus(force = true)
+
                     // Check that at least one analysis is selected
                     if (l_ana.isEmpty()) {
                         Toast.makeText(context, "Sélectionnez au moins une analyse.", Toast.LENGTH_LONG).show()
@@ -883,8 +886,6 @@ fun PatientAnalysisRequestScreen(
             }
 
             if (showConfirmationDialog) {
-                val scope = rememberCoroutineScope()
-
                 AlertDialog(
                     onDismissRequest = { showConfirmationDialog = false },
                     title = { Text("Confirmation") },
@@ -985,7 +986,10 @@ fun PatientAnalysisRequestScreen(
                                         acts = samplingActs,
                                         samples = pathologicalSamples,
                                         results = resultList,
-                                        onSuccess = { navController.navigate("home") },
+                                        onSuccess = {
+                                            Log.i("LabBookLite", "SUCCESS: patient request submitted")
+                                            navController.navigate("home")
+                                        },
                                         onError = { e ->
                                             Log.e(
                                                 "LabBookLite",

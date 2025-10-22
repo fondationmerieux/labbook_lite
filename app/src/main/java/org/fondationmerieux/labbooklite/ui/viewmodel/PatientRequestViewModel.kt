@@ -14,6 +14,7 @@ import org.fondationmerieux.labbooklite.database.model.SamplePayload
 import org.fondationmerieux.labbooklite.repository.RecordRepository
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
+import kotlinx.coroutines.withContext
 
 class PatientRequestViewModel(
     application: Application,
@@ -41,9 +42,12 @@ class PatientRequestViewModel(
                 Log.i("LabBookLite PatientRequest", "Samples: ${samples.size} → ${samples.joinToString { it.analysisId.toString() }}")
                 Log.i("LabBookLite PatientRequest", "Results: ${results.size} → ${results.joinToString { it.analysisId.toString() }}")
 
-                repository.savePatientRequest(record, analyses, acts, samples, results, recLite)
+                withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    repository.savePatientRequest(record, analyses, acts, samples, results, recLite)
+                }
                 onSuccess()
             } catch (e: Exception) {
+                Log.e("LabBookLite", "Erreur pendant la sauvegarde de la demande", e)
                 onError(e)
             }
         }

@@ -1,5 +1,6 @@
 package org.fondationmerieux.labbooklite.database.model
 
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -24,4 +25,6 @@ class PathologicalProduct(
     var recvDate by mutableStateOf(recvDate)
     var recvTime by mutableStateOf(recvTime)
     var status by mutableStateOf(status)
+
+    var isStatusMenuExpanded: MutableState<Boolean> = mutableStateOf(false)
 }

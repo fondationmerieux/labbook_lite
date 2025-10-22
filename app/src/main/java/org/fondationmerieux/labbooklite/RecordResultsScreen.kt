@@ -1110,9 +1110,9 @@ fun RecordResultsScreen(recordId: Int, database: LabBookLiteDatabase, navControl
 
                 val reportEnabled = (hasValidated || hasCancelled)
                 val reportLabel = when {
-                    reportEnabled && !hasPending -> "Rapport complet"
-                    reportEnabled && hasPending -> "Rapport partiel"
-                    else -> "Rapport"
+                    reportEnabled && !hasPending -> "Validation complète"
+                    reportEnabled && hasPending -> "Validation partielle"
+                    else -> "Validation"
                 }
 
                 Row(
