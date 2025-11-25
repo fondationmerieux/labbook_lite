@@ -253,7 +253,16 @@ fun SettingsScreen(navController: NavController) {
                         confirmUploadDialog = false
                         uploadStatus.value = "Envoi des rapports PDF..."
                         scope.launch {
-                            val pdfOk = uploadPdfReports(context, serverUrl, deviceId, password) { error ->
+                            val cleanServerUrl = serverUrl.trim().removeSuffix("/")
+                            val cleanLogin = deviceId.trim()
+                            val cleanPwd = password.trim()
+
+                            val pdfOk = uploadPdfReports(
+                                context = context,
+                                serverUrl = cleanServerUrl,
+                                deviceId = cleanLogin,
+                                password = cleanPwd
+                            ) { error ->
                                 errorMessage = error
                                 showErrorDialog = true
                             }
@@ -261,7 +270,12 @@ fun SettingsScreen(navController: NavController) {
                             if (pdfOk) {
                                 uploadStatus.value = "Rapports transférés. Envoi des données..."
                                 val dataOk = uploadAllDataToServer(
-                                    context, db, serverUrl, deviceId, password, navController
+                                    context = context,
+                                    db = db,
+                                    serverUrl = cleanServerUrl,
+                                    deviceId = cleanLogin,
+                                    password = cleanPwd,
+                                    navController = navController
                                 ) { error ->
                                     errorMessage = error
                                     showErrorDialog = true
@@ -323,7 +337,7 @@ fun fetchConfigurationPost(
             val responseBody = response.body?.string()
 
             Log.d("LabBookLite", "HTTP code: ${response.code}")
-            Log.d("LabBookLite", "Response body: $responseBody")
+            // Log.d("LabBookLite", "Response body: $responseBody")
 
             if (response.isSuccessful && responseBody != null) {
                 val moshi = Moshi.Builder()
@@ -375,10 +389,10 @@ fun fetchConfigurationPost(
                     val analysisCount = database.analysisDao().getAll().size
                     val prescriberCount = database.prescriberDao().getAll().size
 
-                    Log.d(
+                    /*Log.d(
                         "LabBookLite",
                         "AFTER INSERT - user=$userCount, analysis=$analysisCount, prescriber=$prescriberCount"
-                    )
+                    )*/
                 }
 
                 withContext(Dispatchers.Main) {

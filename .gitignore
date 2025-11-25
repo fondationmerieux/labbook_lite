@@ -32,3 +32,7 @@ local.properties
 *.keystore
 *.p12
 *.pem
+".idea/" 
+"index.html" 
+"script.js" 
+"styles.css" 

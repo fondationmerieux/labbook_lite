@@ -80,7 +80,7 @@ fun RecordResultsScreen(recordId: Int, database: LabBookLiteDatabase, navControl
     val validationMap = remember { mutableStateMapOf<Int, AnalysisValidationEntity?>() }
     val analysisStates = remember { mutableStateMapOf<Int, String>() }
 
-    var refreshKey by remember { mutableStateOf(0) }
+    var refreshKey by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(recordId) {
         withContext(Dispatchers.IO) {
@@ -753,7 +753,8 @@ fun RecordResultsScreen(recordId: Int, database: LabBookLiteDatabase, navControl
                                                     value = finalValue,
                                                     validationType = 252,
                                                     comment = null,
-                                                    cancelReason = null
+                                                    cancelReason = null,
+                                                    ana_vld_user = userId
                                                 )
                                             }
 
@@ -964,7 +965,8 @@ fun RecordResultsScreen(recordId: Int, database: LabBookLiteDatabase, navControl
                                                             value = "",
                                                             validationType = 252,
                                                             comment = cancelComment,
-                                                            cancelReason = selectedCancelReason
+                                                            cancelReason = selectedCancelReason,
+                                                            ana_vld_user = userId
                                                         )
                                                         validationDao.insertAll(listOf(validation))
                                                         database.analysisResultDao().updateValue(resultId, "")

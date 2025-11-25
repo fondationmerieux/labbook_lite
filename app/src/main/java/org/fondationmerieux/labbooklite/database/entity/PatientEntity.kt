@@ -34,5 +34,6 @@ data class PatientEntity(
     val pat_pbox: String?,
     val pat_district: String?,
     val pat_email: String?,
-    val pat_lite: Int
+    val pat_lite: Int,
+    val pat_user: Int = 0
 )

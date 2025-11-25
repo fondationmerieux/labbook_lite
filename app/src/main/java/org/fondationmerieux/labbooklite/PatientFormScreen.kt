@@ -1,7 +1,6 @@
 package org.fondationmerieux.labbooklite
 
 import android.content.Context
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -15,7 +14,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
@@ -30,9 +28,9 @@ import org.fondationmerieux.labbooklite.database.LabBookLiteDatabase
 import java.time.LocalDate
 import java.time.Period
 import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeParseException
 import java.time.temporal.ChronoUnit
 import java.util.*
+import org.fondationmerieux.labbooklite.session.SessionManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,7 +56,6 @@ fun PatientFormScreen(database: LabBookLiteDatabase, navController: NavControlle
     var birthField by remember { mutableStateOf(TextFieldValue("")) }
     var isBirthValid by remember { mutableStateOf(true) }
     var birthApproxValue by remember { mutableStateOf<Int?>(null) }
-    var birthApproxYesId by remember { mutableStateOf<Int?>(null) }
     var age by remember { mutableStateOf("") }
     var ageUnit by remember { mutableStateOf<Int?>(null) }
     var ageUnits by remember { mutableStateOf(emptyList<DictionaryEntity>()) }
@@ -99,7 +96,6 @@ fun PatientFormScreen(database: LabBookLiteDatabase, navController: NavControlle
             yornOptions = allDictionaries.filter { it.dico_name == "yorn" }.sortedBy { it.position ?: Int.MAX_VALUE }
             anonymousValue = yornOptions.firstOrNull { it.label.equals("Non", ignoreCase = true) }?.id_data
             anonYesId = yornOptions.firstOrNull { it.label.equals("Oui", ignoreCase = true) }?.id_data
-            birthApproxYesId = yornOptions.firstOrNull { it.label.equals("Oui", ignoreCase = true) }?.id_data
             birthApproxValue = yornOptions.firstOrNull { it.label.equals("Non", ignoreCase = true) }?.id_data
 
             ageUnits = allDictionaries.filter { it.dico_name == "periode_unite" }
@@ -227,15 +223,17 @@ fun PatientFormScreen(database: LabBookLiteDatabase, navController: NavControlle
                                 context.getSharedPreferences("LabBookPrefs", Context.MODE_PRIVATE)
                                     .getInt("lite_ser", -1)
 
+                            val currentUserId = SessionManager.getCurrentUserId(context)
+
                             val newPatient = PatientEntity(
                                 id_data = 0,
                                 pat_ano = anonymousValue,
+                                pat_code_lab = codeLab.text.ifBlank { null },
+                                pat_code = generatedCode.value,
                                 pat_name = if (anonymousValue == anonYesId) null else nom.text,
                                 pat_midname = if (anonymousValue == anonYesId) null else secondName.text,
                                 pat_maiden = if (anonymousValue == anonYesId) null else maidenName.text,
                                 pat_firstname = if (anonymousValue == anonYesId) null else firstname.text,
-                                pat_code = generatedCode.value,
-                                pat_code_lab = codeLab.text.ifBlank { null },
                                 pat_sex = selectedSexId,
                                 pat_birth = birthField.text.ifBlank { null },
                                 pat_birth_approx = birthApproxValue,
@@ -254,7 +252,8 @@ fun PatientFormScreen(database: LabBookLiteDatabase, navController: NavControlle
                                 pat_pbox = pbox.text.ifBlank { null },
                                 pat_district = district.text.ifBlank { null },
                                 pat_email = email.text.ifBlank { null },
-                                pat_lite = liteSer
+                                pat_lite = liteSer,
+                                pat_user = currentUserId // user id from login
                             )
 
                             val insertedId = withContext(Dispatchers.IO) {

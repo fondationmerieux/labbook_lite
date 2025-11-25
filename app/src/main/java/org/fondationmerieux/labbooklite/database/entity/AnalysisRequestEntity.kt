@@ -12,4 +12,5 @@ data class AnalysisRequestEntity(
     val recordId: Int?,                      // identifiant du dossier (id_dos)
     val analysisRef: Int?,                   // référence de l’analyse (ref_analyse)
     val isUrgent: Int?,                      // marqueur d’urgence (urgent)
+    val ana_req_user: Int = 0
 )

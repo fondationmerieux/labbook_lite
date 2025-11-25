@@ -2,6 +2,7 @@ package org.fondationmerieux.labbooklite.database.model
 
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 
@@ -17,14 +18,14 @@ class PathologicalProduct(
     recvTime: String,
     status: Int
 ) {
-    var sampleType by mutableStateOf(sampleType)
-    var productType by mutableStateOf(productType)
+    var sampleType by mutableIntStateOf(sampleType)
+    var productType by mutableIntStateOf(productType)
     var prelDate by mutableStateOf(prelDate)
     var prelTime by mutableStateOf(prelTime)
     var code by mutableStateOf(code)
     var recvDate by mutableStateOf(recvDate)
     var recvTime by mutableStateOf(recvTime)
-    var status by mutableStateOf(status)
+    var status by mutableIntStateOf(status)
 
     var isStatusMenuExpanded: MutableState<Boolean> = mutableStateOf(false)
 }

@@ -142,21 +142,21 @@ val isoFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
 val recordDate = try {
     r.rec_date_receipt?.let { LocalDate.parse(it, inputFormatter) }
-} catch (e: Exception) {
+} catch (_: Exception) {
     Log.w("LabBookLite", "Impossible de parser la date '${r.rec_date_receipt}'")
     null
 }
 
 val startDate = try {
     if (dateStart.isNotBlank()) LocalDate.parse(dateStart, isoFormatter) else null
-} catch (e: Exception) {
+} catch (_: Exception) {
     Log.w("LabBookLite", "Date de début invalide : '$dateStart'")
     null
 }
 
 val endDate = try {
     if (dateEnd.isNotBlank()) LocalDate.parse(dateEnd, isoFormatter) else null
-} catch (e: Exception) {
+} catch (_: Exception) {
     Log.w("LabBookLite", "Date de fin invalide : '$dateEnd'")
     null
 }

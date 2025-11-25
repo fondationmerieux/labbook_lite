@@ -22,5 +22,6 @@ data class RecordEntity(
     val rec_hosp_num: String?,           // numéro hospitalisation
     val rec_date_save: String?,          // date enregistrement
     val rec_num_lite: String?,
-    val rec_lite: Int
+    val rec_lite: Int,
+    val rec_user: Int = 0
 )

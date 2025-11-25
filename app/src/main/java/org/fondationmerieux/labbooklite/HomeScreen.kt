@@ -36,7 +36,7 @@ fun HomeScreen(navController: NavController) {
     val db = LabBookLiteDatabase.getDatabase(context, dbPassword)
 
     var lastRecord by remember { mutableStateOf<RecordEntity?>(null) }
-    var urgentPendingCount by remember { mutableStateOf(0) }
+    var urgentPendingCount by remember { mutableIntStateOf(0) }
 
     val isLoggedIn = prefs.getBoolean("logged_in", false)
 

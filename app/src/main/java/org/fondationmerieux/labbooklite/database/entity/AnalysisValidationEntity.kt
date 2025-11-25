@@ -15,5 +15,6 @@ data class AnalysisValidationEntity(
     val value: String?,                      // valeur saisie lors de la validation (valeur)
     val validationType: Int?,                // type de validation (type_validation)
     val comment: String?,                    // commentaire libre (commentaire)
-    val cancelReason: Int?                   // motif d’annulation (motif_annulation)
+    val cancelReason: Int?,                   // motif d’annulation (motif_annulation)
+    val ana_vld_user: Int = 0
 )

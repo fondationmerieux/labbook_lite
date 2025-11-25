@@ -30,6 +30,9 @@ class RecordRepository(private val context: Context, private val db: LabBookLite
         val validationDao = db.analysisValidationDao()
         val anaLinkDao = db.anaLinkDao()
 
+        val prefs = context.getSharedPreferences("LabBookPrefs", Context.MODE_PRIVATE)
+        val userId = prefs.getInt("user_id", 0)
+
         val now = LocalDateTime.now()
         val dateSave = now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
         val recNumLite = generateRecordLiteNumber(recordDao)
@@ -50,7 +53,8 @@ class RecordRepository(private val context: Context, private val db: LabBookLite
             rec_hosp_num = null,
             rec_date_save = dateSave,
             rec_num_lite = recNumLite,
-            rec_lite = recLite
+            rec_lite = recLite,
+            rec_user = userId
         )
         val recordId = recordDao.insert(recordEntity).toInt()
 
@@ -60,7 +64,8 @@ class RecordRepository(private val context: Context, private val db: LabBookLite
                 id = 0,
                 recordId = recordId,
                 analysisRef = it.analysisId,
-                isUrgent = if (it.urgent) 4 else 5
+                isUrgent = if (it.urgent) 4 else 5,
+                ana_req_user = userId
             )
         }
         val requestInsertedIds = analysisRequestDao.insertAll(requests)
@@ -83,7 +88,8 @@ class RecordRepository(private val context: Context, private val db: LabBookLite
                 location_plus = null,
                 localization = null,
                 code = it.code,
-                samp_id_ana = it.analysisId
+                samp_id_ana = it.analysisId,
+                samp_user = userId
             )
         }
         sampleDao.insertAll(sampleEntities)
@@ -98,15 +104,14 @@ class RecordRepository(private val context: Context, private val db: LabBookLite
                     analysisId = analysisRequestId,
                     variableRef = variableId,
                     value = result.value,
-                    isRequired = null
+                    isRequired = null,
+                    ana_res_user = userId
                 )
             }
         }
         val resultInsertedIds = analysisResultDao.insertAll(resultEntities)
 
         // Insert validations with auto-generated IDs
-        val prefs = context.getSharedPreferences("LabBookPrefs", Context.MODE_PRIVATE)
-        val userId = prefs.getInt("user_id", 0)
         val nowStr = now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
 
         val validationEntities = resultInsertedIds.map { resultId ->
@@ -118,7 +123,8 @@ class RecordRepository(private val context: Context, private val db: LabBookLite
                 value = null,
                 validationType = 250,
                 comment = null,
-                cancelReason = null
+                cancelReason = null,
+                ana_vld_user = userId
             )
         }
         validationDao.insertAll(validationEntities)

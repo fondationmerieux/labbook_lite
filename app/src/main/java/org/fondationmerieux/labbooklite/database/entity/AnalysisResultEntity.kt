@@ -12,5 +12,6 @@ data class AnalysisResultEntity(
     val analysisId: Int,                  // identifiant de la demande d’analyse (id de analysisRequest)
     val variableRef: Int,                 // identifiant de la variable (ref_variable)
     val value: String?,                   // valeur du résultat (valeur)
-    val isRequired: Int?                  // champ obligatoire (obligatoire)
+    val isRequired: Int?,                 // champ obligatoire (obligatoire)
+    val ana_res_user: Int = 0
 )

@@ -21,5 +21,6 @@ data class SampleEntity(
     val location_plus: String?, // lieu_prel_plus
     val localization: String?,
     val code: String?,
-    val samp_id_ana: Int?
+    val samp_id_ana: Int?,
+    val samp_user: Int = 0
 )

@@ -23,10 +23,10 @@ import androidx.compose.material3.OutlinedButton
 fun GeneralScreen(database: LabBookLiteDatabase, navController: NavController) {
     val context = LocalContext.current
 
-    var patientCount by remember { mutableStateOf(0) }
-    var analysisCount by remember { mutableStateOf(0) }
-    var recordCount by remember { mutableStateOf(0) }
-    var sampleCount by remember { mutableStateOf(0) }
+    var patientCount by remember { mutableIntStateOf(0) }
+    var analysisCount by remember { mutableIntStateOf(0) }
+    var recordCount by remember { mutableIntStateOf(0) }
+    var sampleCount by remember { mutableIntStateOf(0) }
     var lastRecordNumber by remember { mutableStateOf<String?>(null) }
     var lastRecordDate by remember { mutableStateOf<String?>(null) }
 
