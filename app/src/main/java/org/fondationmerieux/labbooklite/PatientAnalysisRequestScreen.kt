@@ -36,6 +36,9 @@ import org.fondationmerieux.labbooklite.database.model.RecordPayload
 import org.fondationmerieux.labbooklite.database.model.SamplePayload
 import org.fondationmerieux.labbooklite.ui.viewmodel.PatientRequestViewModel
 import org.fondationmerieux.labbooklite.ui.viewmodel.PatientRequestViewModelFactory
+import org.fondationmerieux.labbooklite.cards.AnalysisRequestCard
+import org.fondationmerieux.labbooklite.cards.ActRequestCard
+import org.fondationmerieux.labbooklite.cards.SampleRequestCard
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.*
@@ -456,66 +459,11 @@ fun PatientAnalysisRequestScreen(
         Text("Analyses", style = MaterialTheme.typography.titleMedium)
 
         l_ana.forEachIndexed { index, analysis ->
-            val code = analysis.code
-            val name = analysis.name
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-            ) {
-                Column(Modifier.padding(8.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        val ana = analyses.firstOrNull { it.id == analysis.id }
-                        val loinc = ana?.ana_loinc?.takeIf { it.isNotBlank() } ?: ""
-                        val displayText =
-                            if (loinc.isNotEmpty()) "$code / $loinc - $name" else "$code - $name"
-
-                        Text(
-                            text = displayText,
-                            style = MaterialTheme.typography.titleSmall,
-                            modifier = Modifier.weight(1f)
-                        )
-                        IconButton(
-                            onClick = { l_ana.removeAt(index) },
-                            modifier = Modifier.padding(start = 8.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Remove",
-                                tint = MaterialTheme.colorScheme.error
-                            )
-                        }
-                    }
-
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            "Urgent :",
-                            modifier = Modifier.padding(end = 8.dp),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Row {
-                            listOf("Oui", "Non").forEach { label ->
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(end = 8.dp)
-                                ) {
-                                    RadioButton(
-                                        selected = (label == "Oui" && analysis.isUrgent.value) || (label == "Non" && !analysis.isUrgent.value),
-                                        onClick = {
-                                            analysis.isUrgent.value = (label == "Oui")
-                                        }
-                                    )
-
-                                    Text(label, style = MaterialTheme.typography.bodyMedium)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            AnalysisRequestCard(
+                analysisSelection = analysis,
+                allAnalyses = analyses,
+                onRemove = { l_ana.removeAt(index) }
+            )
         }
 
         Text("Actes de prélèvement", style = MaterialTheme.typography.titleMedium)
@@ -524,293 +472,22 @@ fun PatientAnalysisRequestScreen(
             val code = act["code"] as String
             val name = act["name"] as String
 
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text("Code : $code", style = MaterialTheme.typography.bodyMedium)
-                        Text("Nom : $name", style = MaterialTheme.typography.bodyMedium)
-                    }
-                    IconButton(
-                        onClick = { l_samp.removeAt(index) },
-                        modifier = Modifier.padding(start = 8.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Remove",
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                    }
-                }
-            }
+            ActRequestCard(
+                code = code,
+                name = name,
+                onRemove = { l_samp.removeAt(index) }
+            )
         }
 
         Text("Produits pathologiques", style = MaterialTheme.typography.titleMedium)
 
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                l_prod.forEachIndexed { index, product ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                    ) {
-                        Column(Modifier.padding(8.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    "Analysis: ${product.analysisCode}",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                IconButton(onClick = { l_prod.removeAt(index) }) {
-                                    Icon(
-                                        imageVector = Icons.Default.Close,
-                                        contentDescription = "Supprimer",
-                                        tint = MaterialTheme.colorScheme.error
-                                    )
-                                }
-                            }
-
-                            // Date & Time of sample
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                val prelDate = product.prelDate
-                                OutlinedTextField(
-                                    value = prelDate,
-                                    onValueChange = {},
-                                    label = { Text("Date prélèvement") },
-                                    readOnly = true,
-                                    modifier = Modifier.weight(1f),
-                                    trailingIcon = {
-                                        IconButton(onClick = {
-                                            val calendar = Calendar.getInstance()
-                                            DatePickerDialog(
-                                                context,
-                                                { _, year, month, day ->
-                                                    val newDate = String.format(
-                                                        locale,
-                                                        "%02d/%02d/%04d",
-                                                        day,
-                                                        month + 1,
-                                                        year
-                                                    )
-                                                    product.prelDate = newDate
-                                                },
-                                                calendar.get(Calendar.YEAR),
-                                                calendar.get(Calendar.MONTH),
-                                                calendar.get(Calendar.DAY_OF_MONTH)
-                                            ).show()
-                                        }) {
-                                            Icon(
-                                                Icons.Filled.CalendarToday,
-                                                contentDescription = "Date Picker"
-                                            )
-                                        }
-                                    }
-                                )
-
-                                val prelTime = product.prelTime
-                                OutlinedTextField(
-                                    value = prelTime,
-                                    onValueChange = {},
-                                    label = { Text("Heure prélèvement") },
-                                    readOnly = true,
-                                    modifier = Modifier.weight(1f),
-                                    trailingIcon = {
-                                        IconButton(onClick = {
-                                            val calendar = Calendar.getInstance()
-                                            TimePickerDialog(
-                                                context,
-                                                { _, hour, minute ->
-                                                    val newTime = String.format(
-                                                        locale,
-                                                        "%02d:%02d",
-                                                        hour,
-                                                        minute
-                                                    )
-                                                    product.prelTime = newTime
-                                                },
-                                                calendar.get(Calendar.HOUR_OF_DAY),
-                                                calendar.get(Calendar.MINUTE),
-                                                true
-                                            ).show()
-                                        }) {
-                                            Icon(
-                                                Icons.Filled.CalendarToday,
-                                                contentDescription = "Select Time"
-                                            )
-                                        }
-                                    }
-                                )
-
-                            }
-
-                            // Product type
-                            val typePrelOptions =
-                                dictionaries.filter { it.dico_name == "type_prel" }
-                            var expanded by remember { mutableStateOf(false) }
-                            val currentTypeId = product.productType
-                            val currentTypeLabel =
-                                typePrelOptions.firstOrNull { it.id_data == currentTypeId }?.label
-                                    ?: ""
-
-                            ExposedDropdownMenuBox(
-                                expanded = expanded,
-                                onExpandedChange = { expanded = it }
-                            ) {
-                                OutlinedTextField(
-                                    value = currentTypeLabel,
-                                    onValueChange = {},
-                                    label = { Text("Type de produit") },
-                                    readOnly = true,
-                                    modifier = Modifier.menuAnchor().fillMaxWidth()
-                                )
-                                ExposedDropdownMenu(
-                                    expanded = expanded,
-                                    onDismissRequest = { expanded = false }
-                                ) {
-                                    typePrelOptions.forEach { option ->
-                                        DropdownMenuItem(
-                                            text = { Text(option.label.orEmpty()) },
-                                            onClick = {
-                                                product.productType = option.id_data
-                                                expanded = false
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-
-                            // Code sample
-                            OutlinedTextField(
-                                value = product.code,
-                                onValueChange = { product.code = it },
-                                label = { Text("Code") },
-                                modifier = Modifier.fillMaxWidth()
-                            )
-
-                            // Date & time of receipt sample
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                OutlinedTextField(
-                                    value = product.recvDate,
-                                    onValueChange = {},
-                                    label = { Text("Date de réception") },
-                                    readOnly = true,
-                                    modifier = Modifier.weight(1f),
-                                    trailingIcon = {
-                                        IconButton(onClick = {
-                                            val calendar = Calendar.getInstance()
-                                            DatePickerDialog(
-                                                context,
-                                                { _, year, month, day ->
-                                                    val newDate = String.format(
-                                                        locale,
-                                                        "%02d/%02d/%04d",
-                                                        day,
-                                                        month + 1,
-                                                        year
-                                                    )
-                                                    product.recvDate = newDate
-                                                },
-                                                calendar.get(Calendar.YEAR),
-                                                calendar.get(Calendar.MONTH),
-                                                calendar.get(Calendar.DAY_OF_MONTH)
-                                            ).show()
-                                        }) {
-                                            Icon(
-                                                Icons.Filled.CalendarToday,
-                                                contentDescription = "Select date"
-                                            )
-                                        }
-                                    }
-                                )
-
-                                OutlinedTextField(
-                                    value = product.recvTime,
-                                    onValueChange = {},
-                                    label = { Text("Heure de réception") },
-                                    readOnly = true,
-                                    modifier = Modifier.weight(1f),
-                                    trailingIcon = {
-                                        IconButton(onClick = {
-                                            val calendar = Calendar.getInstance()
-                                            TimePickerDialog(
-                                                context,
-                                                { _, hour, minute ->
-                                                    val newTime = String.format(
-                                                        locale,
-                                                        "%02d:%02d",
-                                                        hour,
-                                                        minute
-                                                    )
-                                                    product.recvTime = newTime
-                                                },
-                                                calendar.get(Calendar.HOUR_OF_DAY),
-                                                calendar.get(Calendar.MINUTE),
-                                                true
-                                            ).show()
-                                        }) {
-                                            Icon(
-                                                Icons.Filled.CalendarToday,
-                                                contentDescription = "Select time"
-                                            )
-                                        }
-                                    }
-                                )
-                            }
-
-                            // Status
-                            val statusOptions =
-                                dictionaries.filter { it.dico_name == "prel_statut" }
-                            val currentStatusId = product.status
-                            val currentStatusLabel = statusOptions
-                                .firstOrNull { it.id_data == currentStatusId }?.label.orEmpty()
-
-                            ExposedDropdownMenuBox(
-                                expanded = product.isStatusMenuExpanded.value,
-                                onExpandedChange = { product.isStatusMenuExpanded.value = it }
-                            ) {
-                                OutlinedTextField(
-                                    value = currentStatusLabel,
-                                    onValueChange = {},
-                                    label = { Text("Statut") },
-                                    readOnly = true,
-                                    modifier = Modifier.menuAnchor().fillMaxWidth()
-                                )
-                                ExposedDropdownMenu(
-                                    expanded = product.isStatusMenuExpanded.value,
-                                    onDismissRequest = { product.isStatusMenuExpanded.value = false }
-                                ) {
-                                    statusOptions.forEach { option ->
-                                        DropdownMenuItem(
-                                            text = { Text(option.label.orEmpty()) },
-                                            onClick = {
-                                                product.status = option.id_data
-                                                product.isStatusMenuExpanded.value = false
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            l_prod.forEachIndexed { index, product ->
+                SampleRequestCard(
+                    product = product,
+                    dictionaries = dictionaries,
+                    onRemove = { l_prod.removeAt(index) }
+                )
             }
         }
 

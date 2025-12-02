@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
+## \[1.0.5] - 2025-12-02
+
+### Changed
+* extracted cards into dedicated files for clarity
+* replaced multi-step DB operations with withTransaction
+* removed obsolete LoginActivity and TODOs
+
 ## \[1.0.4] - 2025-11-24
 
 ### Added

@@ -35,6 +35,7 @@ import java.util.concurrent.TimeUnit
 import android.util.Base64
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.room.withTransaction
 import org.fondationmerieux.labbooklite.database.model.PdfReport
 import org.fondationmerieux.labbooklite.database.model.UploadPayload
 import org.json.JSONObject
@@ -84,11 +85,11 @@ fun SettingsScreen(navController: NavController) {
 
     if (showErrorDialog && errorMessage != null) {
         AlertDialog(
-            onDismissRequest = { showErrorDialog = false },
+            onDismissRequest = { },
             title = { Text("Error") },
             text = { Text(errorMessage!!) },
             confirmButton = {
-                Button(onClick = { showErrorDialog = false }) {
+                Button(onClick = { }) {
                     Text("Close")
                 }
             }
@@ -196,7 +197,6 @@ fun SettingsScreen(navController: NavController) {
                                 url = fullUrl,
                                 onError = {
                                     isLoading = false
-                                    showErrorDialog = true
                                     errorMessage = it
                                 },
                                 onSuccess = {
@@ -264,7 +264,6 @@ fun SettingsScreen(navController: NavController) {
                                 password = cleanPwd
                             ) { error ->
                                 errorMessage = error
-                                showErrorDialog = true
                             }
 
                             if (pdfOk) {
@@ -274,11 +273,9 @@ fun SettingsScreen(navController: NavController) {
                                     db = db,
                                     serverUrl = cleanServerUrl,
                                     deviceId = cleanLogin,
-                                    password = cleanPwd,
-                                    navController = navController
+                                    password = cleanPwd
                                 ) { error ->
                                     errorMessage = error
-                                    showErrorDialog = true
                                 }
 
                                 uploadStatus.value = if (dataOk) {
@@ -347,30 +344,33 @@ fun fetchConfigurationPost(
                 val adapter = moshi.adapter(SetupResponse::class.java)
                 val setup = adapter.fromJson(responseBody)
 
-                setup?.let {
-                    database.userDao().insertAll(it.users)
-                    database.patientDao().insertAll(it.patients)
-                    database.prescriberDao().insertAll(it.prescribers)
-                    database.preferencesDao().insertAll(it.preferences)
-                    database.nationalityDao().insertAll(it.nationality)
-                    database.dictionaryDao().insertAll(it.dictionary)
-                    database.analysisDao().insertAll(it.analysis)
-                    database.anaLinkDao().insertAll(it.ana_link)
-                    database.anaVarDao().insertAll(it.ana_var)
-                    database.sampleDao().insertAll(it.sample)
-                    database.recordDao().insertAll(it.record)
-                    database.analysisRequestDao().insertAll(it.analysis_request)
-                    database.analysisResultDao().insertAll(it.analysis_result)
-                    database.analysisValidationDao().insertAll(it.analysis_validation)
+                setup?.let { setupData ->
+                    // Wrap all DB writes in a single transaction
+                    database.withTransaction {
+                        database.userDao().insertAll(setupData.users)
+                        database.patientDao().insertAll(setupData.patients)
+                        database.prescriberDao().insertAll(setupData.prescribers)
+                        database.preferencesDao().insertAll(setupData.preferences)
+                        database.nationalityDao().insertAll(setupData.nationality)
+                        database.dictionaryDao().insertAll(setupData.dictionary)
+                        database.analysisDao().insertAll(setupData.analysis)
+                        database.anaLinkDao().insertAll(setupData.ana_link)
+                        database.anaVarDao().insertAll(setupData.ana_var)
+                        database.sampleDao().insertAll(setupData.sample)
+                        database.recordDao().insertAll(setupData.record)
+                        database.analysisRequestDao().insertAll(setupData.analysis_request)
+                        database.analysisResultDao().insertAll(setupData.analysis_result)
+                        database.analysisValidationDao().insertAll(setupData.analysis_validation)
+                    }
 
                     val prefs = context.getSharedPreferences("LabBookPrefs", Context.MODE_PRIVATE)
                     prefs.edit() {
-                        putInt("lite_ser", it.lite_ser)
-                        putString("lite_name", it.lite_name)
-                        putString("lite_report_pwd", it.lite_report_pwd)
+                        putInt("lite_ser", setupData.lite_ser)
+                        putString("lite_name", setupData.lite_name)
+                        putString("lite_report_pwd", setupData.lite_report_pwd)
                     }
 
-                    val logoBase64 = it.logo_base64
+                    val logoBase64 = setupData.logo_base64
                     if (!logoBase64.isNullOrEmpty()) {
                         try {
                             val imageBytes = Base64.decode(logoBase64, Base64.DEFAULT)
@@ -385,11 +385,12 @@ fun fetchConfigurationPost(
                         }
                     }
 
+                    /*
                     val userCount = database.userDao().getAll().size
                     val analysisCount = database.analysisDao().getAll().size
                     val prescriberCount = database.prescriberDao().getAll().size
 
-                    /*Log.d(
+                    Log.d(
                         "LabBookLite",
                         "AFTER INSERT - user=$userCount, analysis=$analysisCount, prescriber=$prescriberCount"
                     )*/
@@ -573,7 +574,6 @@ suspend fun uploadAllDataToServer(
     serverUrl: String,
     deviceId: String,
     password: String,
-    navController: NavController,
     onError: (String) -> Unit
 ): Boolean {
     return withContext(Dispatchers.IO) {
@@ -636,12 +636,14 @@ suspend fun uploadAllDataToServer(
             val success = response.isSuccessful
 
             if (success) {
-                // 1. Clear some tables
-                db.recordDao().deleteAll()
-                db.analysisRequestDao().deleteAll()
-                db.analysisResultDao().deleteAll()
-                db.analysisValidationDao().deleteAll()
-                db.sampleDao().deleteAll()
+                // 1. Clear some tables inside a single transaction
+                db.withTransaction {
+                    db.recordDao().deleteAll()
+                    db.analysisRequestDao().deleteAll()
+                    db.analysisResultDao().deleteAll()
+                    db.analysisValidationDao().deleteAll()
+                    db.sampleDao().deleteAll()
+                }
 
                 // 2. Delete all report PDFs
                 context.filesDir.listFiles()?.forEach { file ->

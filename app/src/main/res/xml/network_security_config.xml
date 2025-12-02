@@ -13,5 +13,5 @@
     <!-- HTTP exceptions: ONLY allow cleartext for specific hosts that truly need it -->
     <!-- DEBUG ONLY <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="false">192.168.255.37</domain>
-    </domain-config>-->
+    </domain-config> END DEBUG-->
 </network-security-config>

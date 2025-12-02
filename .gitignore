@@ -36,3 +36,4 @@ local.properties
 "index.html" 
 "script.js" 
 "styles.css" 
+".idea/" 
