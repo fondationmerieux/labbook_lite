@@ -52,7 +52,7 @@ fun SampleRequestCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "Analysis: ${product.analysisCode}",
+                    "Analyse: ${product.analysisCode}",
                     style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier.weight(1f)
                 )
