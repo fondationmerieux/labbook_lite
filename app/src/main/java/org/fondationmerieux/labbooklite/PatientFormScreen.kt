@@ -183,12 +183,18 @@ fun PatientFormScreen(database: LabBookLiteDatabase, navController: NavControlle
                 Button(
                     onClick = {
                         coroutineScope.launch {
+                            val trimmedCodeLab = codeLab.text.trim()
+
                             val existing = withContext(Dispatchers.IO) {
-                                if (codeLab.text.isNotBlank()) {
-                                    database.patientDao().getByCodeLab(codeLab.text.trim())
-                                } else null
+                                if (trimmedCodeLab.isNotBlank()) {
+                                    database.patientDao().getByCodeLab(trimmedCodeLab)
+                                } else {
+                                    null
+                                }
                             }
-                            if (existing != null) {
+
+                            // Conflict only if another patient already has this code
+                            if (existing != null && existing.id_data != patientId) {
                                 Toast.makeText(
                                     context,
                                     context.getString(R.string.code_patient_deja_existant),
@@ -228,7 +234,7 @@ fun PatientFormScreen(database: LabBookLiteDatabase, navController: NavControlle
                             val newPatient = PatientEntity(
                                 id_data = 0,
                                 pat_ano = anonymousValue,
-                                pat_code_lab = codeLab.text.ifBlank { null },
+                                pat_code_lab = trimmedCodeLab.ifBlank { null },
                                 pat_code = generatedCode.value,
                                 pat_name = if (anonymousValue == anonYesId) null else nom.text,
                                 pat_midname = if (anonymousValue == anonYesId) null else secondName.text,

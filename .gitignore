@@ -1,39 +1,49 @@
-# IDE
+# --------------------
+# IDE (Android Studio / IntelliJ)
+# --------------------
+.idea/
 *.iml
-.idea/caches
-.idea/libraries
-.idea/modules.xml
-.idea/workspace.xml
-.idea/navEditor.xml
-.idea/assetWizardSettings.xml
 
+# --------------------
 # OS
+# --------------------
 .DS_Store
+Thumbs.db
 
-# Gradle / Kotlin / C++
-**/.gradle/
-**/.kotlin/
-**/.cxx/
-**/externalNativeBuild/
-
-# Builds & outputs
-**/build/
-**/outputs/
-app/release/
-
-# Android defaults
-captures/
+# --------------------
+# Gradle / Kotlin / NDK
+# --------------------
+.gradle/
+.kotlin/
+.cxx/
+externalNativeBuild/
 local.properties
 
+# --------------------
+# Builds & outputs
+# --------------------
+build/
+outputs/
+app/release/
+
+# --------------------
+# Android captures
+# --------------------
+captures/
+
+# --------------------
 # Binaries & secrets
+# --------------------
 *.apk
 *.aab
 *.jks
 *.keystore
 *.p12
 *.pem
-".idea/" 
-"index.html" 
-"script.js" 
-"styles.css" 
-".idea/" 
+
+# --------------------
+# Local scratch / tests
+# --------------------
+index.html
+script.js
+styles.css

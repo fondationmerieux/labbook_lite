@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
+## \[1.0.6] - 2026-02-05
+
+### Fixed
+* patient laboratory code uniqueness check to exclude the current record during update.
+
+
 ## \[1.0.5] - 2025-12-02
 
 ### Changed

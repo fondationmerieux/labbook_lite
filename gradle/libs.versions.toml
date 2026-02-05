@@ -1,8 +1,8 @@
 [versions]
 # Android & Kotlin
-agp = "8.13.1"
+agp = "8.6.1"
 itext = "8.0.2"
-kotlin = "2.1.10"
+kotlin = "2.3.10"
 
 # AndroidX Core / AppCompat
 coreKtx = "1.15.0"
@@ -25,9 +25,9 @@ navigationCompose = "2.8.9"
 constraintlayout = "2.2.1"
 
 # Room
-roomRuntime = "2.6.1"
-roomKtx = "2.6.1"
-roomCompiler = "2.6.1"
+roomRuntime = "2.8.4"
+roomKtx = "2.8.4"
+roomCompiler = "2.8.4"
 
 # SQLCipher
 androidDatabaseSqlcipher = "4.5.4"
@@ -49,7 +49,7 @@ junitVersion = "1.2.1"
 espressoCore = "3.6.1"
 
 # KSP
-ksp = "2.1.10-1.0.31"
+ksp = "2.3.5"
 
 [libraries]
 
